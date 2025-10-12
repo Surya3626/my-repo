@@ -10,7 +10,7 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.ticket.booking</groupId>
-	<artifactId>eventticketbooking</artifactId>
+	<artifactId>ticket-booking-app</artifactId>
 	<version>1.0</version>
 	<name>demo</name>
 	<description>Event Ticket Booking App</description>
