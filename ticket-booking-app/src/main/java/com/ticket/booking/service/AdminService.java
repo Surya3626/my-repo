@@ -34,6 +34,13 @@ public class AdminService {
 	
 	public ResponseEntity<GenericResponseVo> addEvent(EventDetVo event) {
 		try {
+			
+			List<Events> list = eventsRepo.findByEventDateAndLocation(event.getEventDate(), event.getLocation());
+			if(list!=null && !list.isEmpty()) {
+				return ResponseEntity.badRequest().body(GenericResponseVo.builder().statusCode("0001").statusDescription("An event at same location and at same date already exist")
+						.statusType("Error").build());
+			}
+			
 			Events events = new Events();
 			events.setAvailableTickets(event.getAvailableTickets());
 			events.setConductedBy(event.getConductedBy());
@@ -59,6 +66,33 @@ public class AdminService {
 
 	public ResponseEntity<GenericResponseVo> deleteEvent(Long eventId) {
 		try {
+			
+			Events events = eventsRepo.findByEventIdAndEventStatusIsNot(eventId, "CANCELLED");
+			if(events!=null) {
+				events.setEventStatus("CANCELLED");
+				events.setUpdateddBy("delete Event");
+				events.setUpdatedOn(LocalDateTime.now());
+				events.setReason("delete Event");
+				
+				eventsRepo.save(events);
+				
+				//payment refund
+				
+				ObjectMapper mapper = new ObjectMapper();
+				List<Ticket> bookingDetails = ticketRepo.findByEventIdAndBookingStatus(eventId, "CONFIRMED");
+				if(bookingDetails!=null && !bookingDetails.isEmpty()) {
+					for(Ticket ticket :bookingDetails) {
+						ticket.setBookingStatus("CANCELLED");
+						ticket.setUpdateddBy("system");
+						
+						PaymentDetailsVo paymentDetailsVo = PaymentDetailsVo.builder().bookingId(ticket.getBookingId()).reasonForRefund("Event Cancelled").build();
+						kafkaProducerService.sendMessage(eventCancelTopic, mapper.writeValueAsString(paymentDetailsVo));
+					}
+					
+					ticketRepo.saveAll(bookingDetails);
+				}
+			}
+			
 			eventsRepo.deleteById(eventId);
 			
 			return ResponseEntity.ok().body(GenericResponseVo.builder().statusCode("0000").statusDescription("Event Deleted successfully")
@@ -141,6 +175,19 @@ public class AdminService {
 			}
 			
 			eventsRepo.save(events);
+			
+			List<Ticket> list = ticketRepo.findByEventId(event.getEventId());
+			for(Ticket ticket : list) {
+				if(event.getConductedBy()!=null && !event.getConductedBy().isBlank()) {
+					ticket.setConductedBy(event.getConductedBy());
+				}
+				if(event.getEventDate()!=null && !event.getEventDate().isAfter(LocalDateTime.now())) {
+					ticket.setEventDate(event.getEventDate());
+				}
+				if(event.getLocation()!=null && !event.getLocation().isBlank()) {
+					ticket.setEventLocation(event.getLocation());
+				}
+			}
 			
 			//notify user if possible
 			

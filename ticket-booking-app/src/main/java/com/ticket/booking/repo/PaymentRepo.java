@@ -14,4 +14,6 @@ import jakarta.transaction.Transactional;
 public interface PaymentRepo extends JpaRepository<PaymentDetails, Long> {
 
 	PaymentDetails findByBookingIdAndPaymentStatusNotIn(String bookingId, List<String> paymentStatus);
+	
+	PaymentDetails findByPaymentIdAndRefundStatusNotIn(Long paymentId, List<String> refundStatus);
 }

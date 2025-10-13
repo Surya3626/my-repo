@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -109,6 +108,8 @@ public class UserEventService {
 			data.put("bookingId", ticket2.getBookingId());
 			data.put("amount", ticket2.getPrice());
 			
+			//send confirmation mail
+			
 			return ResponseEntity.ok().body(GenericResponseVo.builder().statusCode("0000").statusDescription("Please complete payment to confirm your ticket")
 					.statusType("Success").data(Arrays.asList(data)).build());
 			
@@ -122,13 +123,12 @@ public class UserEventService {
 
 	public ResponseEntity<GenericResponseVo> cancelBooking(TicketDetailsVo ticket) {
 		try {
-			Optional<Ticket> ticketDet = ticketRepo.findById(ticket.getTicketId());
-			if(ticketDet==null || !ticketDet.isPresent() || ticketDet.get()==null) {
+			Ticket ticket2 = ticketRepo.findByBookingIdAndBookingStatusNotIn(ticket.getBookindId(), List.of("CANCELLED"));
+			if(ticket2==null) {
 				return ResponseEntity.badRequest().body(GenericResponseVo.builder().statusCode("1111").statusDescription("No Such Ticket Present")
 						.statusType("Error").build());
 			}
 			
-			Ticket ticket2 = ticketDet.get();
 			LocalDateTime allowedDate = ticket2.getEventDate().minusDays(1);
 			if(LocalDateTime.now().isAfter(allowedDate)) {
 				return ResponseEntity.badRequest().body(GenericResponseVo.builder().statusCode("1111").statusDescription("Cancellation not allowed")
@@ -153,6 +153,8 @@ public class UserEventService {
 			Map<String, Object> data = new HashMap<>();
 			data.put("cancellationId", cancellationId);
 			data.put("refundAmount", ticket2.getPrice());
+			
+			//send mail
 			
 			return ResponseEntity.ok().body(GenericResponseVo.builder().statusCode("0000").statusDescription("Ticket Cancelled Successfully. Refund will be credited within 2 working days.")
 					.statusType("Success").data(Arrays.asList(data)).build());

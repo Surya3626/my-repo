@@ -2,7 +2,6 @@ package com.ticket.booking.kafka.consumer;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -28,19 +27,18 @@ public class KafkaConsumer {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			PaymentDetailsVo detailsVo = mapper.readValue(message, PaymentDetailsVo.class);
-			Optional<PaymentDetails> optional = paymentRepo.findById(detailsVo.getPaymentId());
-			if(optional==null || !optional.isPresent()) {
+			PaymentDetails paymentDetails = paymentRepo.findByPaymentIdAndRefundStatusNotIn(detailsVo.getPaymentId(), List.of("CANCELLED"));
+			if(paymentDetails!=null) {
+				paymentDetails.setPaymentStatus("CANCELLED");
+				paymentDetails.setUpdateddBy("CancelEvent");
+				paymentDetails.setUpdatedOn(LocalDateTime.now());
+				paymentDetails.setCancellationId(detailsVo.getCancellationId());
+				paymentRepo.save(paymentDetails);
+				
+				log.info("Refund succesfull");
+			}else {
 				log.error("Details not found");
 			}
-			
-			PaymentDetails paymentDetails = optional.get();
-			paymentDetails.setPaymentStatus("CANCELLED");
-			paymentDetails.setUpdateddBy("CancelEvent");
-			paymentDetails.setUpdatedOn(LocalDateTime.now());
-			paymentDetails.setCancellationId(detailsVo.getCancellationId());
-			paymentRepo.save(paymentDetails);
-			
-			log.info("Refund succesfull");
 			
 		} catch (Exception e) {
 			log.error("Exception ",e);

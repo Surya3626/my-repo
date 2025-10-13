@@ -18,4 +18,9 @@ public interface TicketRepo extends JpaRepository<Ticket, Long> {
 	 List<Ticket> findByUserId(String userId);
 	 
 	 Ticket findByBookingId(String bookingId);
+	 
+	 List<Ticket> findByEventId(Long eventId);
+	 
+	 Ticket findByBookingIdAndBookingStatusNotIn(String bookingId, List<String> bookingStatus);
+	 
 }

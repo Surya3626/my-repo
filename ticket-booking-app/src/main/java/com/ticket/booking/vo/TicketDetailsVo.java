@@ -7,7 +7,7 @@ import lombok.Data;
 @Builder
 public class TicketDetailsVo {
 
-	private Long ticketId;
+	private String bookindId;
 	private Long eventId;
 	private int noOfTickets;
 	private String reasonForCancellation;

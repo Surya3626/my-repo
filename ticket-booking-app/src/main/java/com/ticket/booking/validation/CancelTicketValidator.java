@@ -10,7 +10,7 @@ public class CancelTicketValidator implements GenericValidator<TicketDetailsVo> 
 	@Override
 	public boolean isValid(TicketDetailsVo t) {
 
-		if(t.getTicketId()==null )
+		if(t.getBookindId()==null || t.getBookindId().isBlank())
 			return false;
 		if(t.getReasonForCancellation()==null || t.getReasonForCancellation().isBlank())
 			return false;

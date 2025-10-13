@@ -48,10 +48,9 @@ public class UserControllerImpl {
 	public ResponseEntity<?> register(@RequestBody RegisterVo request){
 		
 		try {
-			
 			LoginUserDetails userDetails = loginUserRepo.findByUserId(request.getEmailId());
 			if(userDetails!=null) {
-				return ResponseEntity.internalServerError().body(ResponseVo.builder().statusCode("9999").statusDescription("Technical Exception Occured")
+				return ResponseEntity.badRequest().body(ResponseVo.builder().statusCode("0001").statusDescription("user already exist")
 						.statusType("Error").build());
 			}
 			
@@ -66,8 +65,8 @@ public class UserControllerImpl {
 			
 			loginUserRepo.save(user);
 			
-			return ResponseEntity.badRequest().body(ResponseVo.builder().statusCode("0001").statusDescription("user already exist")
-					.statusType("Error").build());
+			return ResponseEntity.ok().body(ResponseVo.builder().statusCode("0000").statusDescription("user created succesfully")
+					.statusType("Success").build());
 			
 		} catch (Exception e) {
 			log.error("Exception ",e);

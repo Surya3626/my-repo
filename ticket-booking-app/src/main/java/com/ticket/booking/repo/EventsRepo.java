@@ -20,4 +20,6 @@ public interface EventsRepo extends JpaRepository<Events, Long> {
 	
 	Events findByEventIdAndEventStatusIsNot(Long eventId, String status);
 	
+	List<Events> findByEventDateAndLocation(LocalDateTime eventDate, String location);
+	
 }
