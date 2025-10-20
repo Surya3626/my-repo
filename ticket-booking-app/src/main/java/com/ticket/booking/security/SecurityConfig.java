@@ -26,8 +26,8 @@ public class SecurityConfig {
 
 		return http.csrf(c->c.disable()).authorizeHttpRequests(auth->auth.requestMatchers("/admin/**").hasRole("ADMIN")
 				.requestMatchers("/user/**").hasRole("USER").requestMatchers("/public/**").permitAll()
-				//.requestMatchers("/actuator/**").hasRole("ADMIN")
-				.anyRequest().permitAll())
+				.requestMatchers("/swagger-ui/**","/v3/api-docs/**").permitAll()
+				.anyRequest().authenticated())
 				.sessionManagement(sess-> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.addFilterBefore(jwtFilter	, UsernamePasswordAuthenticationFilter.class)
 				.build();

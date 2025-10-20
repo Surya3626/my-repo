@@ -19,6 +19,8 @@ import com.ticket.booking.vo.EventDetVo;
 import com.ticket.booking.vo.GenericResponseVo;
 import com.ticket.booking.vo.PaymentDetailsVo;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "AdminController", description = "Admin APIs")
 public class AdminControllerImpl {
 
 	private final AdminService adminService;
@@ -36,6 +39,7 @@ public class AdminControllerImpl {
 	private final PaymentService paymentService;
 
 	@PostMapping("/addEvent")
+	@Operation(summary = "API to add new Event")
 	public ResponseEntity<GenericResponseVo> addEvent(@RequestBody EventDetVo event) {
 
 		if(reqValidator.isValid(event))
