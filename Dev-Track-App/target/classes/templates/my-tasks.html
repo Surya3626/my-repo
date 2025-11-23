@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tasks | DevTrack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F3E8FF;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        .sidebar-link.active {
+            background-color: #F3E8FF;
+            color: #9333EA;
+            font-weight: 600;
+        }
+
+        .sidebar-link:hover:not(.active) {
+            background-color: #F9FAFB;
+            color: #9333EA;
+        }
+
+        /* Modal Transition */
+        .modal {
+            transition: opacity 0.2s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex overflow-hidden"
+    x-data="{ createModalOpen: false, updateModalOpen: false, selectedTask: {} }">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white flex flex-col flex-shrink-0 z-30 shadow-sm h-full">
+        <!-- Logo -->
+        <div class="h-20 flex items-center px-8">
+            <div
+                class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-purple-200">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800">DevTrack</h1>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <a href="/"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-house w-6 text-lg"></i>
+                <span class="ml-3">Home</span>
+            </a>
+
+            <a href="/my-tasks"
+                class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-list-check w-6 text-lg"></i>
+                <span class="ml-3">My Tasks</span>
+            </a>
+
+            <a href="/my-bugs" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-bug w-6 text-lg"></i>
+                <span class="ml-3">My Bugs</span>
+            </a>
+
+            <a href="/bug-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-shield-virus w-6 text-lg"></i>
+                <span class="ml-3">Bug Manager</span>
+            </a>
+        </nav>
+
+        <!-- User Profile -->
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition cursor-pointer">
+                <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User"
+                    class="w-10 h-10 rounded-full">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-gray-900 truncate" sec:authentication="name">User</p>
+                    <p class="text-xs text-gray-500 truncate">Pro Member</p>
+                </div>
+                <form action="/logout" method="post">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F3E8FF]">
+
+        <!-- Header -->
+        <header class="h-20 flex justify-between items-center px-8 lg:px-12 flex-shrink-0">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">My Tasks</h1>
+                <p class="text-sm text-gray-500">Manage your assigned tasks</p>
+            </div>
+            <div class="flex gap-4">
+                <button
+                    class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-purple-600 shadow-sm transition">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-purple-600 shadow-sm transition relative">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-pink-500 rounded-full"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Area -->
+        <main class="flex-1 overflow-y-auto p-8 lg:px-12 pb-12">
+
+            <!-- Task List -->
+            <div class="bg-white rounded-3xl shadow-sm p-8 h-full flex flex-col">
+                <div class="flex justify-between items-center mb-6 flex-shrink-0">
+                    <h3 class="text-lg font-bold text-gray-800">Assigned Tasks</h3>
+                    <button @click="createModalOpen = true"
+                        class="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition shadow-lg shadow-gray-900/20">
+                        + Create New Task
+                    </button>
+                </div>
+
+                <div class="overflow-auto flex-1">
+                    <table class="w-full min-w-[1200px]">
+                        <thead class="sticky top-0 bg-white z-10">
+                            <tr
+                                class="text-left text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                                <th class="pb-4 pl-4">Jtrack ID</th>
+                                <th class="pb-4">Type</th>
+                                <th class="pb-4">Task Name</th>
+                                <th class="pb-4">Branch</th>
+                                <th class="pb-4 w-64">Description</th>
+                                <th class="pb-4">Status</th>
+                                <th class="pb-4">Priority</th>
+                                <th class="pb-4">Due Date</th>
+                                <th class="pb-4 text-right pr-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <tr th:each="task : ${tasks}" class="group hover:bg-gray-50 transition-colors">
+                                <td class="py-4 pl-4 text-sm font-mono text-gray-500" th:text="${task.jtrackId}"></td>
+                                <td class="py-4">
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+                                        th:text="${task.type}"></span>
+                                </td>
+                                <td class="py-4 font-semibold text-gray-800 text-sm" th:text="${task.taskName}"></td>
+                                <td class="py-4 text-sm text-gray-500 font-mono" th:text="${task.branch}"></td>
+                                <td class="py-4 text-sm text-gray-500 truncate max-w-xs" th:text="${task.description}">
+                                </td>
+                                <td class="py-4">
+                                    <span class="px-3 py-1 rounded-lg text-xs font-bold"
+                                        th:classappend="${task.status == 'In Progress' ? 'bg-purple-100 text-purple-600' : (task.status == 'Done' ? 'bg-green-100 text-green-600' : (task.status == 'Blocked' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'))}"
+                                        th:text="${task.status}">
+                                    </span>
+                                </td>
+                                <td class="py-4">
+                                    <span class="text-sm font-medium"
+                                        th:classappend="${task.priority == 'High' ? 'text-pink-500' : 'text-gray-600'}"
+                                        th:text="${task.priority}"></span>
+                                </td>
+                                <td class="py-4 text-xs text-gray-500" th:text="${task.dueDate}"></td>
+                                <td class="py-4 text-right pr-4">
+                                    <button th:data-id="${task.id}" th:data-task-name="${task.taskName}"
+                                        th:data-status="${task.status}" th:data-type="${task.type}"
+                                        th:data-branch="${task.branch}" th:data-priority="${task.priority}"
+                                        th:data-jtrack-id="${task.jtrackId}" th:data-efforts="${task.efforts}"
+                                        th:data-dev-start-date="${task.devStartDate}" th:data-sit-date="${task.sitDate}"
+                                        th:data-uat-date="${task.uatDate}" th:data-prod-date="${task.prodDate}"
+                                        th:data-description="${task.description}" @click="selectedTask = {
+                                            id: $el.dataset.id,
+                                            taskName: $el.dataset.taskName,
+                                            status: $el.dataset.status,
+                                            type: $el.dataset.type,
+                                            branch: $el.dataset.branch,
+                                            priority: $el.dataset.priority,
+                                            jtrackId: $el.dataset.jtrackId,
+                                            efforts: $el.dataset.efforts,
+                                            devStartDate: $el.dataset.devStartDate,
+                                            sitDate: $el.dataset.sitDate,
+                                            uatDate: $el.dataset.uatDate,
+                                            prodDate: $el.dataset.prodDate,
+                                            description: $el.dataset.description
+                                        }; updateModalOpen = true"
+                                        class="text-gray-400 hover:text-purple-600 transition">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Create Task Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm modal"
+        :class="createModalOpen ? 'active' : ''">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 m-4 relative shadow-2xl">
+            <button @click="createModalOpen = false"
+                class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-8">Create New Task</h2>
+
+            <form action="/task/create" method="post" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Task
+                            Type</label>
+                        <select name="type"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                            <option value="CR">CR</option>
+                            <option value="SR">SR</option>
+                            <option value="Enhancement">Enhancement</option>
+                            <option value="Fix">Fix</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Branch
+                            Name</label>
+                        <input type="text" name="branch" placeholder="e.g., feature/user-profile-v2"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Effort
+                            (PDs)</label>
+                        <input type="number" name="efforts" step="0.1" placeholder="0.5"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
+                    <textarea name="description" rows="4" placeholder="Provide a detailed description..."
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Dev
+                            Start</label>
+                        <input type="date" name="devStartDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">SIT
+                            Date</label>
+                        <input type="date" name="sitDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">UAT
+                            Date</label>
+                        <input type="date" name="uatDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">PROD
+                            Date</label>
+                        <input type="date" name="prodDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Jtrack
+                            ID</label>
+                        <input type="text" name="jtrackId" placeholder="e.g., JTRACK-1234"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Task
+                            Name</label>
+                        <input type="text" name="taskName" placeholder="Task Title" required
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-6 border-t border-gray-100">
+                    <button type="button" @click="createModalOpen = false"
+                        class="mr-4 px-6 py-3 rounded-xl text-gray-500 hover:bg-gray-50 font-medium transition">Cancel</button>
+                    <button type="submit"
+                        class="bg-gray-900 text-white px-8 py-3 rounded-xl font-semibold shadow-lg shadow-gray-900/20 hover:bg-gray-800 transform hover:-translate-y-0.5 transition-all">
+                        Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update Task Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm modal"
+        :class="updateModalOpen ? 'active' : ''">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-8 m-4 relative shadow-2xl">
+            <button @click="updateModalOpen = false"
+                class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-8">Update Task</h2>
+
+            <form action="/task/update" method="post" class="space-y-6">
+                <input type="hidden" name="taskId" :value="selectedTask.id">
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Task
+                            Type</label>
+                        <select name="type"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm"
+                            :value="selectedTask.type">
+                            <option value="CR">CR</option>
+                            <option value="SR">SR</option>
+                            <option value="Enhancement">Enhancement</option>
+                            <option value="Fix">Fix</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Branch
+                            Name</label>
+                        <input type="text" name="branch" :value="selectedTask.branch"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Effort
+                            (PDs)</label>
+                        <input type="number" name="efforts" step="0.1" :value="selectedTask.efforts"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
+                    <textarea name="description" rows="4" :value="selectedTask.description"
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Dev
+                            Start</label>
+                        <input type="date" name="devStartDate" :value="selectedTask.devStartDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">SIT
+                            Date</label>
+                        <input type="date" name="sitDate" :value="selectedTask.sitDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">UAT
+                            Date</label>
+                        <input type="date" name="uatDate" :value="selectedTask.uatDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">PROD
+                            Date</label>
+                        <input type="date" name="prodDate" :value="selectedTask.prodDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Jtrack
+                            ID</label>
+                        <input type="text" name="jtrackId" :value="selectedTask.jtrackId"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Task
+                            Name</label>
+                        <input type="text" name="taskName" :value="selectedTask.taskName" required
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Status</label>
+                        <select name="status"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm"
+                            :value="selectedTask.status">
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Done">Done</option>
+                            <option value="Blocked">Blocked</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-6 border-t border-gray-100">
+                    <button type="button" @click="updateModalOpen = false"
+                        class="mr-4 px-6 py-3 rounded-xl text-gray-500 hover:bg-gray-50 font-medium transition">Cancel</button>
+                    <button type="submit"
+                        class="bg-gray-900 text-white px-8 py-3 rounded-xl font-semibold shadow-lg shadow-gray-900/20 hover:bg-gray-800 transform hover:-translate-y-0.5 transition-all">
+                        Update Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alpine.js for interactivity -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</body>
+
+</html>

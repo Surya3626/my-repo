@@ -1,0 +1,17 @@
+com\example\devtrack\config\SecurityConfig.class
+com\example\devtrack\repository\BugRepository.class
+com\example\devtrack\model\Task.class
+com\example\devtrack\model\ChangeRequest.class
+com\example\devtrack\DevTrackApplication.class
+com\example\devtrack\model\User.class
+com\example\devtrack\security\JwtAuthenticationFilter.class
+com\example\devtrack\service\CustomUserDetailsService.class
+com\example\devtrack\repository\ChangeRequestRepository.class
+com\example\devtrack\controller\TaskController.class
+com\example\devtrack\model\Bug.class
+com\example\devtrack\controller\BugController.class
+com\example\devtrack\repository\TaskRepository.class
+com\example\devtrack\repository\UserRepository.class
+com\example\devtrack\security\JwtUtil.class
+com\example\devtrack\model\Role.class
+com\example\devtrack\controller\LoginController.class

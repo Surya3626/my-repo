@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bugs | DevTrack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F3E8FF;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        .sidebar-link.active {
+            background-color: #F3E8FF;
+            color: #9333EA;
+            font-weight: 600;
+        }
+
+        .sidebar-link:hover:not(.active) {
+            background-color: #F9FAFB;
+            color: #9333EA;
+        }
+
+        /* Modal Transition */
+        .modal {
+            transition: opacity 0.2s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex overflow-hidden" x-data="{ updateModalOpen: false, selectedBug: {} }">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white flex flex-col flex-shrink-0 z-30 shadow-sm h-full">
+        <!-- Logo -->
+        <div class="h-20 flex items-center px-8">
+            <div
+                class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-purple-200">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800">DevTrack</h1>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <a href="/"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-house w-6 text-lg"></i>
+                <span class="ml-3">Home</span>
+            </a>
+
+            <a href="/my-tasks"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-list-check w-6 text-lg"></i>
+                <span class="ml-3">My Tasks</span>
+            </a>
+
+            <a href="/my-bugs" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
+                class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-bug w-6 text-lg"></i>
+                <span class="ml-3">My Bugs</span>
+            </a>
+
+            <a href="/bug-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-shield-virus w-6 text-lg"></i>
+                <span class="ml-3">Bug Manager</span>
+            </a>
+        </nav>
+
+        <!-- User Profile -->
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition cursor-pointer">
+                <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User"
+                    class="w-10 h-10 rounded-full">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-gray-900 truncate" sec:authentication="name">User</p>
+                    <p class="text-xs text-gray-500 truncate">Pro Member</p>
+                </div>
+                <form action="/logout" method="post">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F3E8FF]">
+
+        <!-- Header -->
+        <header class="h-20 flex justify-between items-center px-8 lg:px-12 flex-shrink-0">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">My Bugs</h1>
+                <p class="text-sm text-gray-500">View and manage bugs assigned to you.</p>
+            </div>
+            <div class="flex gap-4">
+                <button
+                    class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-purple-600 shadow-sm transition">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-purple-600 shadow-sm transition relative">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-pink-500 rounded-full"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Area -->
+        <main class="flex-1 overflow-y-auto p-8 lg:px-12 pb-12">
+
+            <!-- Filters -->
+            <div class="bg-white rounded-3xl shadow-sm p-6 mb-8">
+                <form action="/my-bugs" method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" name="title" placeholder="Search by Title"
+                        class="px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 text-sm focus:border-purple-500 outline-none">
+                    <select name="status"
+                        class="px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 text-sm focus:border-purple-500 outline-none">
+                        <option value="">All Status</option>
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                    <select name="priority"
+                        class="px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 text-sm focus:border-purple-500 outline-none">
+                        <option value="">All Priority</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                    <button type="submit"
+                        class="bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-purple-700 transition">Apply
+                        Filters</button>
+                </form>
+            </div>
+
+            <!-- Bug List -->
+            <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Bug ID</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Title</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Status</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Priority</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Updated</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr th:each="bug : ${bugs}" class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 text-sm font-semibold text-gray-800" th:text="'BUG-' + ${bug.id}">
+                                    BUG-101</td>
+                                <td class="px-6 py-4">
+                                    <div class="font-semibold text-gray-800" th:text="${bug.title}">Login fails</div>
+                                    <div class="text-sm text-gray-500 truncate max-w-xs" th:text="${bug.description}">
+                                        Description</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span th:class="${bug.status == 'Open' ? 'bg-yellow-100 text-yellow-700' : 
+                                                     bug.status == 'In Progress' ? 'bg-blue-100 text-blue-700' : 
+                                                     bug.status == 'Resolved' ? 'bg-green-100 text-green-700' : 
+                                                     'bg-gray-100 text-gray-700'}"
+                                        class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide"
+                                        th:text="${bug.status}">Open</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span th:class="${bug.priority == 'Critical' ? 'bg-red-100 text-red-700' : 
+                                                     bug.priority == 'High' ? 'bg-orange-100 text-orange-700' : 
+                                                     bug.priority == 'Medium' ? 'bg-yellow-100 text-yellow-700' : 
+                                                     'bg-gray-100 text-gray-700'}"
+                                        class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide"
+                                        th:text="${bug.priority}">High</span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500" th:text="${bug.updatedDate}">2024-11-22</td>
+                                <td class="px-6 py-4">
+                                    <button th:data-id="${bug.id}" th:data-title="${bug.title}"
+                                        th:data-status="${bug.status}" th:data-priority="${bug.priority}"
+                                        th:data-description="${bug.description}" th:data-comments="${bug.comments}"
+                                        @click="selectedBug = {
+                                            id: $el.dataset.id,
+                                            title: $el.dataset.title,
+                                            status: $el.dataset.status,
+                                            priority: $el.dataset.priority,
+                                            description: $el.dataset.description,
+                                            comments: $el.dataset.comments
+                                        }; updateModalOpen = true"
+                                        class="text-gray-400 hover:text-purple-600 transition">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(bugs)}">
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                    No bugs assigned to you.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Update Bug Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm modal"
+        :class="updateModalOpen ? 'active' : ''">
+        <div class="bg-white w-full max-w-2xl rounded-3xl p-8 m-4 relative shadow-2xl">
+            <button @click="updateModalOpen = false"
+                class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Update Bug</h2>
+
+            <form action="/bug/update" method="post" class="space-y-6">
+                <input type="hidden" name="bugId" :value="selectedBug.id">
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Status</label>
+                    <select name="status" :value="selectedBug.status"
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
+                    <textarea name="description" rows="3" :value="selectedBug.description"
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm"></textarea>
+                </div>
+
+                <!-- Comments Section -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Comments
+                        History</label>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-xs text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto"
+                        x-text="selectedBug.comments || 'No comments yet.'">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Add
+                        Comment</label>
+                    <textarea name="newComment" rows="3" placeholder="Add a comment..."
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-purple-500 outline-none text-sm"></textarea>
+                </div>
+
+                <div class="flex justify-end pt-6 border-t border-gray-100">
+                    <button type="button" @click="updateModalOpen = false"
+                        class="mr-4 px-6 py-3 rounded-xl text-gray-500 hover:bg-gray-50 font-medium transition">Cancel</button>
+                    <button type="submit"
+                        class="bg-gray-900 text-white px-8 py-3 rounded-xl font-semibold shadow-lg shadow-gray-900/20 hover:bg-gray-800 transform hover:-translate-y-0.5 transition-all">
+                        Update Bug
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alpine.js for interactivity -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</body>
+
+</html>
