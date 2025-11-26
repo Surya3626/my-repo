@@ -16,6 +16,9 @@ public class ChangeRequest {
     private LocalDate uatStartDate;
     private LocalDate createdAt;
 
+    @OneToMany(mappedBy = "changeRequest", cascade = CascadeType.ALL)
+    private java.util.List<TestCase> testCases;
+
     public ChangeRequest() {
         this.createdAt = LocalDate.now();
     }
@@ -75,5 +78,13 @@ public class ChangeRequest {
 
     public void setCreatedAt(LocalDate createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public java.util.List<TestCase> getTestCases() {
+        return testCases;
+    }
+
+    public void setTestCases(java.util.List<TestCase> testCases) {
+        this.testCases = testCases;
     }
 }

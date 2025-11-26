@@ -39,6 +39,8 @@ public class LoginController {
                         if (user != null) {
                             if (user.getRoles().contains(com.example.devtrack.model.Role.TESTING)) {
                                 return "redirect:/bug-manager";
+                            } else if (user.getRoles().contains(com.example.devtrack.model.Role.TEST_ADMIN)) {
+                                return "redirect:/bug-report";
                             } else {
                                 return "redirect:/";
                             }
@@ -71,6 +73,9 @@ public class LoginController {
             // Redirect based on role
             if (userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_TESTING"))) {
                 return "redirect:/bug-manager";
+            } else if (userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_TEST_ADMIN"))) {
+                return "redirect:/bug-report";
             } else {
                 return "redirect:/"; // Admin and Developer go to Home
             }

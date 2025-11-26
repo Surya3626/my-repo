@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevTrack | Bug Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F3E8FF;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        .sidebar-link.active {
+            background-color: #F3E8FF;
+            color: #9333EA;
+            font-weight: 600;
+        }
+
+        .sidebar-link:hover:not(.active) {
+            background-color: #F9FAFB;
+            color: #9333EA;
+        }
+
+        /* Modal Transition */
+        .modal {
+            transition: opacity 0.2s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex overflow-hidden" x-data="{ commentModalOpen: false, selectedBug: {} }">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white flex flex-col flex-shrink-0 z-30 shadow-sm h-full">
+        <!-- Logo -->
+        <div class="h-20 flex items-center px-8">
+            <div
+                class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-purple-200">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800">DevTrack</h1>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <a href="/"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-house w-6 text-lg"></i>
+                <span class="ml-3">Home</span>
+            </a>
+
+            <a href="/my-tasks"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-list-check w-6 text-lg"></i>
+                <span class="ml-3">My Tasks</span>
+            </a>
+
+            <a href="/my-bugs" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-bug w-6 text-lg"></i>
+                <span class="ml-3">My Bugs</span>
+            </a>
+
+            <a href="/bug-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-shield-virus w-6 text-lg"></i>
+                <span class="ml-3">Bug Manager</span>
+            </a>
+
+            <a href="/bug-report" sec:authorize="hasAnyRole('TEST_ADMIN', 'ADMIN')"
+                class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
+                <i class="fa-solid fa-file-medical w-6 text-lg"></i>
+                <span class="ml-3">Bug Report</span>
+            </a>
+        </nav>
+
+        <!-- User Profile -->
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition cursor-pointer">
+                <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User"
+                    class="w-10 h-10 rounded-full">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-gray-900 truncate" sec:authentication="name">User</p>
+                    <p class="text-xs text-gray-500 truncate" sec:authentication="principal.authorities">Role</p>
+                </div>
+                <form action="/logout" method="post">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F3E8FF]">
+
+        <!-- Header -->
+        <header class="h-20 flex justify-between items-center px-8 lg:px-12 flex-shrink-0">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Bug Report</h1>
+                <p class="text-sm text-gray-500">Overview of all Change Requests and Bugs</p>
+            </div>
+        </header>
+
+        <!-- Scrollable Area -->
+        <main class="flex-1 overflow-y-auto p-8 lg:px-12 pb-12">
+
+            <div class="space-y-6">
+                <!-- CR List -->
+                <div th:each="cr : ${crs}" class="bg-white rounded-3xl shadow-sm overflow-hidden"
+                    x-data="{ expanded: false }">
+                    <!-- CR Header (Clickable) -->
+                    <div @click="expanded = !expanded"
+                        class="p-6 cursor-pointer hover:bg-gray-50 transition flex justify-between items-center">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-4 mb-2">
+                                <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-bold"
+                                    th:text="${cr.jtrackId}">JT-1001</span>
+                                <h3 class="text-lg font-bold text-gray-800" th:text="${cr.title}">CR Title</h3>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-2" th:text="${cr.description}">Description...</p>
+                            <div class="flex items-center gap-6 text-xs text-gray-400">
+                                <span><i class="fa-regular fa-calendar mr-2"></i>UAT Start: <span
+                                        th:text="${cr.uatStartDate}">2024-11-20</span></span>
+                                <span><i class="fa-solid fa-bug mr-2"></i>Bugs: <span
+                                        th:text="${bugsByCrId.get(cr.id) != null ? bugsByCrId.get(cr.id).size() : 0}">0</span></span>
+                            </div>
+                        </div>
+                        <div class="text-gray-400 transform transition-transform duration-200"
+                            :class="expanded ? 'rotate-180' : ''">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                    </div>
+
+                    <!-- Bugs List (Expandable) -->
+                    <div x-show="expanded" x-collapse class="border-t border-gray-100 bg-gray-50 p-6">
+                        <div th:if="${bugsByCrId.get(cr.id) == null || bugsByCrId.get(cr.id).isEmpty()}"
+                            class="text-center text-gray-500 py-4">
+                            No bugs reported for this CR.
+                        </div>
+
+                        <div th:if="${bugsByCrId.get(cr.id) != null && !bugsByCrId.get(cr.id).isEmpty()}"
+                            class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="text-xs font-bold text-gray-400 uppercase border-b border-gray-200">
+                                        <th class="pb-3 pl-2">Bug ID</th>
+                                        <th class="pb-3">Description</th>
+                                        <th class="pb-3">Raised By</th>
+                                        <th class="pb-3">Raised On</th>
+                                        <th class="pb-3">Assigned To</th>
+                                        <th class="pb-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    <tr th:each="bug : ${bugsByCrId.get(cr.id)}"
+                                        class="hover:bg-white transition cursor-pointer" th:data-id="${bug.id}"
+                                        th:data-title="${bug.title}" th:data-comments="${bug.comments}" @click="selectedBug = {
+                                            id: $el.dataset.id,
+                                            title: $el.dataset.title,
+                                            comments: $el.dataset.comments
+                                        }; commentModalOpen = true">
+                                        <td class="py-3 pl-2 text-sm font-mono text-gray-500" th:text="${bug.id}">1</td>
+                                        <td class="py-3 text-sm text-gray-800 font-medium" th:text="${bug.title}">Title
+                                        </td>
+                                        <td class="py-3 text-sm text-gray-600">
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600"
+                                                    th:text="${bug.raisedBy != null ? #strings.substring(bug.raisedBy.name,0,1) : '?'}">
+                                                </div>
+                                                <span
+                                                    th:text="${bug.raisedBy != null ? bug.raisedBy.name : 'Unknown'}">User</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 text-sm text-gray-600" th:text="${bug.createdDate}">2024-11-20
+                                        </td>
+                                        <td class="py-3 text-sm text-gray-600"
+                                            th:text="${bug.assignedTo != null ? bug.assignedTo.name : 'Unassigned'}">Dev
+                                        </td>
+                                        <td class="py-3">
+                                            <span
+                                                th:classappend="${bug.status == 'Resolved' ? 'bg-green-100 text-green-800' :
+                                                (bug.status == 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                                (bug.status == 'Closed' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'))}"
+                                                class="px-3 py-1 rounded-full text-xs font-medium"
+                                                th:text="${bug.status}">Open</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Comment Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm modal"
+        :class="commentModalOpen ? 'active' : ''">
+        <div class="bg-white w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-3xl p-8 m-4 relative shadow-2xl">
+            <button @click="commentModalOpen = false"
+                class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Bug Details</h2>
+            <p class="text-gray-500 mb-6" x-text="selectedBug.title"></p>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Comments
+                    History</label>
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm text-gray-600 whitespace-pre-wrap min-h-[100px]"
+                    x-text="selectedBug.comments || 'No comments available.'">
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-6 mt-6 border-t border-gray-100">
+                <button type="button" @click="commentModalOpen = false"
+                    class="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg shadow-gray-900/20 hover:bg-gray-800 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</body>
+
+</html>

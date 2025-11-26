@@ -34,6 +34,9 @@ public class TaskController {
         @Autowired
         private com.example.devtrack.repository.BugRepository bugRepository;
 
+        @Autowired
+        private com.example.devtrack.repository.ChangeRequestRepository changeRequestRepository;
+
         @GetMapping("/")
         public String dashboard(@RequestParam(required = false) String status,
                         @RequestParam(required = false) String priority,
@@ -241,6 +244,8 @@ public class TaskController {
         public void initData() {
                 userRepository.deleteAll();
                 taskRepository.deleteAll();
+                bugRepository.deleteAll();
+                changeRequestRepository.deleteAll();
 
                 // Create Users
                 User admin = new User("admin", "Admin User", "admin123", "admin@example.com", "1234567890",
@@ -253,8 +258,24 @@ public class TaskController {
                                 new HashSet<>(Collections.singletonList(Role.DEVELOPER)));
                 User tester = new User("tester", "Test User", "test123", "test@example.com", "9988776655",
                                 new HashSet<>(Collections.singletonList(Role.TESTING)));
+                User testAdmin = new User("testadmin", "Test Admin", "testadmin123", "testadmin@example.com",
+                                "1231231234",
+                                new HashSet<>(Collections.singletonList(Role.TEST_ADMIN)));
 
-                userRepository.saveAll(Arrays.asList(admin, dev1, dev2, dev3, tester));
+                userRepository.saveAll(Arrays.asList(admin, dev1, dev2, dev3, tester, testAdmin));
+
+                // Create Change Requests
+                com.example.devtrack.model.ChangeRequest cr1 = new com.example.devtrack.model.ChangeRequest(
+                                "Q4 Release", "JT-2001", "Major release for Q4 including new dashboard.",
+                                LocalDate.now().plusDays(5));
+                com.example.devtrack.model.ChangeRequest cr2 = new com.example.devtrack.model.ChangeRequest(
+                                "Security Patch", "JT-2002", "Critical security updates.",
+                                LocalDate.now().plusDays(2));
+                com.example.devtrack.model.ChangeRequest cr3 = new com.example.devtrack.model.ChangeRequest(
+                                "Mobile App Update", "JT-2003", "Updates for iOS and Android apps.",
+                                LocalDate.now().plusDays(10));
+
+                changeRequestRepository.saveAll(Arrays.asList(cr1, cr2, cr3));
 
                 // Create Tasks
                 taskRepository.saveAll(Arrays.asList(
@@ -292,30 +313,48 @@ public class TaskController {
                                                 3.0, LocalDate.now().minusDays(12), dev3)));
 
                 // Create Bugs
-                bugRepository.deleteAll();
-                bugRepository.saveAll(Arrays.asList(
-                                new com.example.devtrack.model.Bug("Login button unresponsive on mobile",
-                                                "Clicking login does nothing on iOS Safari.", "Open", "High",
-                                                "Critical", dev2, tester, LocalDate.now().minusDays(2),
-                                                LocalDate.now()),
-                                new com.example.devtrack.model.Bug("Dashboard charts not loading",
-                                                "500 Error when loading analytics.", "In Progress", "Critical",
-                                                "Critical", dev1, tester, LocalDate.now().minusDays(1),
-                                                LocalDate.now()),
-                                new com.example.devtrack.model.Bug("Typo in welcome message",
-                                                "Says 'Welcom' instead of 'Welcome'.", "Resolved", "Low", "SR", dev3,
-                                                tester, LocalDate.now().minusDays(5), LocalDate.now().minusDays(1)),
-                                new com.example.devtrack.model.Bug("Profile image upload fails",
-                                                "Uploads > 2MB fail silently.", "Open", "Medium", "Enhancement", dev1,
-                                                tester, LocalDate.now(), LocalDate.now())));
+                com.example.devtrack.model.Bug bug1 = new com.example.devtrack.model.Bug(
+                                "Login button unresponsive on mobile",
+                                "Clicking login does nothing on iOS Safari.", "Open", "High",
+                                "Critical", dev2, tester, LocalDate.now().minusDays(2),
+                                LocalDate.now());
+                bug1.setChangeRequest(cr1);
+
+                com.example.devtrack.model.Bug bug2 = new com.example.devtrack.model.Bug(
+                                "Dashboard charts not loading",
+                                "500 Error when loading analytics.", "In Progress", "Critical",
+                                "Critical", dev1, tester, LocalDate.now().minusDays(1),
+                                LocalDate.now());
+                bug2.setChangeRequest(cr1);
+
+                com.example.devtrack.model.Bug bug3 = new com.example.devtrack.model.Bug(
+                                "Typo in welcome message",
+                                "Says 'Welcom' instead of 'Welcome'.", "Resolved", "Low", "SR", dev3,
+                                tester, LocalDate.now().minusDays(5), LocalDate.now().minusDays(1));
+                bug3.setChangeRequest(cr2);
+
+                com.example.devtrack.model.Bug bug4 = new com.example.devtrack.model.Bug(
+                                "Profile image upload fails",
+                                "Uploads > 2MB fail silently.", "Open", "Medium", "Enhancement", dev1,
+                                tester, LocalDate.now(), LocalDate.now());
+                bug4.setChangeRequest(cr3);
+
+                // Add more bugs for variety and testing filters
+                com.example.devtrack.model.Bug bug5 = new com.example.devtrack.model.Bug(
+                                "Search not working",
+                                "Search returns no results.", "Open", "High", "Bug", dev2,
+                                admin, LocalDate.now(), LocalDate.now());
+                bug5.setChangeRequest(cr1);
+
+                bugRepository.saveAll(Arrays.asList(bug1, bug2, bug3, bug4, bug5));
 
                 // Add comments to bugs manually since constructor doesn't support it yet
                 List<com.example.devtrack.model.Bug> bugs = bugRepository.findAll();
                 if (!bugs.isEmpty()) {
-                        com.example.devtrack.model.Bug bug1 = bugs.get(0);
-                        bug1.setComments(
+                        com.example.devtrack.model.Bug b1 = bugs.get(0);
+                        b1.setComments(
                                         "[2024-11-20 10:00] Test User (TESTING): Reproduced on iPhone 12.\n[2024-11-21 09:30] Maria Lopez (DEVELOPER): Investigating touch events.");
-                        bugRepository.save(bug1);
+                        bugRepository.save(b1);
                 }
 
                 // Add comments to tasks

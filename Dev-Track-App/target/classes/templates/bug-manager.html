@@ -9,13 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #F3E8FF;
         }
 
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -43,65 +43,103 @@
             background-color: #F9FAFB;
             color: #9333EA;
         }
+
+        /* Modal Transition */
+        .modal {
+            transition: opacity 0.2s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 
-<body class="h-screen flex overflow-hidden" x-data="{ createModalOpen: false }">
+<body class="h-screen flex overflow-hidden" x-data="{ createModalOpen: false, sidebarOpen: true }">
 
     <!-- Sidebar -->
-    <aside class="w-64 bg-white flex flex-col flex-shrink-0 z-30 shadow-sm h-full">
+    <aside class="bg-white flex flex-col flex-shrink-0 z-30 shadow-sm h-full transition-all duration-300"
+        :class="sidebarOpen ? 'w-64' : 'w-20'">
         <!-- Logo -->
-        <div class="h-20 flex items-center px-8">
+        <div class="h-20 flex items-center px-6" :class="sidebarOpen ? 'justify-start' : 'justify-center'">
             <div
-                class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-purple-200">
+                class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-purple-200 flex-shrink-0">
                 <i class="fa-solid fa-layer-group"></i>
             </div>
-            <h1 class="text-xl font-bold text-gray-800">DevTrack</h1>
+            <h1 class="text-xl font-bold text-gray-800 ml-3 transition-opacity duration-300" x-show="sidebarOpen"
+                x-transition:enter="delay-100">DevTrack</h1>
         </div>
 
         <!-- Navigation -->
         <nav class="flex-1 px-4 space-y-2 mt-4">
             <a href="/"
-                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
-                <i class="fa-solid fa-house w-6 text-lg"></i>
-                <span class="ml-3">Home</span>
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-house w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Home</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">Home</div>
             </a>
 
             <a href="/my-tasks"
-                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
-                <i class="fa-solid fa-list-check w-6 text-lg"></i>
-                <span class="ml-3">My Tasks</span>
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-list-check w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Tasks</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">My Tasks</div>
             </a>
 
             <a href="/my-bugs" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
-                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
-                <i class="fa-solid fa-bug w-6 text-lg"></i>
-                <span class="ml-3">My Bugs</span>
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-bug w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Bugs</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">My Bugs</div>
             </a>
 
             <a href="/bug-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
-                class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group">
-                <i class="fa-solid fa-shield-virus w-6 text-lg"></i>
-                <span class="ml-3">Bug Manager</span>
+                class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-shield-virus w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Bug Manager</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">Bug Manager</div>
+            </a>
+
+            <a href="/test-case-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-vial w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Test Cases</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">Test Cases</div>
             </a>
         </nav>
 
         <!-- User Profile -->
         <div class="p-4 border-t border-gray-100">
-            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition cursor-pointer">
+            <div class="flex items-center p-2 rounded-xl hover:bg-gray-50 transition cursor-pointer"
+                :class="sidebarOpen ? 'gap-3' : 'justify-center'">
                 <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User"
-                    class="w-10 h-10 rounded-full">
-                <div class="flex-1 min-w-0">
+                    class="w-10 h-10 rounded-full flex-shrink-0">
+                <div class="flex-1 min-w-0 transition-opacity duration-300" x-show="sidebarOpen">
                     <p class="text-sm font-bold text-gray-900 truncate" sec:authentication="name">User</p>
                     <p class="text-xs text-gray-500 truncate">Pro Member</p>
                 </div>
-                <form action="/logout" method="post">
+                <form action="/logout" method="post" x-show="sidebarOpen">
                     <button type="submit" class="text-gray-400 hover:text-red-500 transition">
                         <i class="fa-solid fa-right-from-bracket"></i>
                     </button>
                 </form>
             </div>
         </div>
+
+        <!-- Collapse Toggle -->
+        <button @click="sidebarOpen = !sidebarOpen"
+            class="absolute -right-3 top-24 bg-white border border-gray-100 rounded-full w-6 h-6 flex items-center justify-center text-gray-400 hover:text-purple-600 shadow-sm z-50">
+            <i class="fa-solid fa-chevron-left text-xs transition-transform duration-300"
+                :class="!sidebarOpen ? 'rotate-180' : ''"></i>
+        </button>
     </aside>
 
     <!-- Main Content -->
@@ -124,7 +162,7 @@
         <!-- Scrollable Area -->
         <main class="flex-1 overflow-y-auto p-8 lg:px-12 pb-12">
 
-            <!-- CR Table -->
+            <!-- CR List -->
             <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
@@ -166,76 +204,69 @@
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(crs)}">
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-400">
-                                    <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
-                                    No Change Requests yet. Create one to get started.
+                                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                                    No Change Requests found.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-
         </main>
     </div>
 
     <!-- Create CR Modal -->
-    <div x-show="createModalOpen" x-cloak
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        @click.self="createModalOpen = false">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" @click.stop>
-            <div class="p-8">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Create New CR</h2>
-                    <button @click="createModalOpen = false" class="text-gray-400 hover:text-gray-600 transition">
-                        <i class="fa-solid fa-xmark text-2xl"></i>
-                    </button>
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm modal"
+        :class="createModalOpen ? 'active' : ''">
+        <div class="bg-white w-full max-w-2xl rounded-3xl p-8 m-4 relative shadow-2xl">
+            <button @click="createModalOpen = false"
+                class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Create Change Request</h2>
+
+            <form action="/cr/create" method="post" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">CR Title</label>
+                    <input type="text" name="title" placeholder="e.g., Q4 Release" required
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
                 </div>
 
-                <form action="/cr/create" method="post" class="space-y-6">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">CR
-                            Title</label>
-                        <input type="text" name="title" placeholder="e.g., User Profile Management" required
-                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">JTrack ID</label>
+                    <input type="text" name="jtrackId" placeholder="e.g., JT-2001" required
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">JTrack
-                            ID</label>
-                        <input type="text" name="jtrackId" placeholder="e.g., JIRA-1234" required
-                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
-                    </div>
+                <div>
+                    <label
+                        class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
+                    <textarea name="description" rows="3" placeholder="Brief description of the CR..."
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm"></textarea>
+                </div>
 
-                    <div>
-                        <label
-                            class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
-                        <textarea name="description" rows="3" placeholder="Describe the change request..."
-                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all"></textarea>
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">UAT Start
+                        Date</label>
+                    <input type="date" name="uatStartDate" required
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all text-sm">
+                </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">UAT Start
-                            Date</label>
-                        <input type="date" name="uatStartDate"
-                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
-                    </div>
-
-                    <div class="flex gap-4 pt-4">
-                        <button type="button" @click="createModalOpen = false"
-                            class="flex-1 px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                            class="flex-1 px-6 py-3 rounded-xl bg-purple-600 text-white font-semibold shadow-lg shadow-purple-200 hover:bg-purple-700 transition">
-                            Create CR
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <div class="flex justify-end pt-6 border-t border-gray-100">
+                    <button type="button" @click="createModalOpen = false"
+                        class="mr-4 px-6 py-3 rounded-xl text-gray-500 hover:bg-gray-50 font-medium transition">Cancel</button>
+                    <button type="submit"
+                        class="bg-purple-600 text-white px-8 py-3 rounded-xl font-semibold shadow-lg shadow-purple-200 hover:bg-purple-700 transform hover:-translate-y-0.5 transition-all">
+                        Create CR
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
+    <!-- Alpine.js for interactivity -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </body>
 
 </html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Case Manager | DevTrack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F3E8FF;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        .sidebar-link.active {
+            background-color: #F3E8FF;
+            color: #9333EA;
+            font-weight: 600;
+        }
+
+        .sidebar-link:hover:not(.active) {
+            background-color: #F9FAFB;
+            color: #9333EA;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex overflow-hidden" x-data="{ createModalOpen: false, sidebarOpen: true }">
+
+    <!-- Sidebar -->
+    <aside class="bg-white flex flex-col flex-shrink-0 z-30 shadow-sm h-full transition-all duration-300"
+        :class="sidebarOpen ? 'w-64' : 'w-20'">
+        <!-- Logo -->
+        <div class="h-20 flex items-center px-6" :class="sidebarOpen ? 'justify-start' : 'justify-center'">
+            <div
+                class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-purple-200 flex-shrink-0">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800 ml-3 transition-opacity duration-300" x-show="sidebarOpen"
+                x-transition:enter="delay-100">DevTrack</h1>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <a href="/"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-house w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Home</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">Home</div>
+            </a>
+
+            <a href="/my-tasks"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-list-check w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Tasks</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">My Tasks</div>
+            </a>
+
+            <a href="/my-bugs" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-bug w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Bugs</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">My Bugs</div>
+            </a>
+
+            <a href="/bug-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+                class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-shield-virus w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Bug Manager</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">Bug Manager</div>
+            </a>
+
+            <a href="/test-case-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+                class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
+                <i class="fa-solid fa-vial w-6 text-lg text-center"></i>
+                <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Test Cases</span>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
+                    x-show="!sidebarOpen">Test Cases</div>
+            </a>
+        </nav>
+
+        <!-- User Profile -->
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center p-2 rounded-xl hover:bg-gray-50 transition cursor-pointer"
+                :class="sidebarOpen ? 'gap-3' : 'justify-center'">
+                <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User"
+                    class="w-10 h-10 rounded-full flex-shrink-0">
+                <div class="flex-1 min-w-0 transition-opacity duration-300" x-show="sidebarOpen">
+                    <p class="text-sm font-bold text-gray-900 truncate" sec:authentication="name">User</p>
+                    <p class="text-xs text-gray-500 truncate">Pro Member</p>
+                </div>
+                <form action="/logout" method="post" x-show="sidebarOpen">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Collapse Toggle -->
+        <button @click="sidebarOpen = !sidebarOpen"
+            class="absolute -right-3 top-24 bg-white border border-gray-100 rounded-full w-6 h-6 flex items-center justify-center text-gray-400 hover:text-purple-600 shadow-sm z-50">
+            <i class="fa-solid fa-chevron-left text-xs transition-transform duration-300"
+                :class="!sidebarOpen ? 'rotate-180' : ''"></i>
+        </button>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F3E8FF]">
+
+        <!-- Header -->
+        <header class="h-20 flex justify-between items-center px-8 lg:px-12 flex-shrink-0">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Test Case Manager</h1>
+                <p class="text-sm text-gray-500">Manage Test Cases for Change Requests</p>
+            </div>
+            <div class="flex gap-4">
+                <button @click="createModalOpen = true"
+                    class="px-6 py-2.5 bg-purple-600 text-white rounded-xl font-semibold shadow-lg shadow-purple-200 hover:bg-purple-700 transition">
+                    <i class="fa-solid fa-plus mr-2"></i>Create CR
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Area -->
+        <main class="flex-1 overflow-y-auto p-8 lg:px-12 pb-12">
+
+            <!-- CR Table -->
+            <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    CR Title</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    JTrack ID</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    UAT Start Date</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Created</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr th:each="cr : ${crs}" class="hover:bg-gray-50 transition cursor-pointer"
+                                th:onclick="'window.location.href=\'/test-cases/cr/' + ${cr.id} + '\''">
+                                <td class="px-6 py-4">
+                                    <div class="font-semibold text-gray-800" th:text="${cr.title}">User Profile
+                                        Management</div>
+                                    <div class="text-sm text-gray-500" th:text="${cr.description}">Description</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-600" th:text="${cr.jtrackId}">JIRA-1234</td>
+                                <td class="px-6 py-4 text-sm text-gray-600" th:text="${cr.uatStartDate}">2024-11-25</td>
+                                <td class="px-6 py-4 text-sm text-gray-600" th:text="${cr.createdAt}">2024-11-20</td>
+                                <td class="px-6 py-4">
+                                    <a th:href="@{/test-cases/cr/{id}(id=${cr.id})}"
+                                        class="text-purple-600 hover:text-purple-800 font-semibold text-sm">
+                                        View Test Cases →
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(crs)}">
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                                    <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
+                                    No Change Requests yet. Create one to get started.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Create CR Modal -->
+    <div x-show="createModalOpen" x-cloak
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        @click.self="createModalOpen = false">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" @click.stop>
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Create New CR</h2>
+                    <button @click="createModalOpen = false" class="text-gray-400 hover:text-gray-600 transition">
+                        <i class="fa-solid fa-xmark text-2xl"></i>
+                    </button>
+                </div>
+
+                <form action="/test-cases/create-cr" method="post" class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">CR
+                            Title</label>
+                        <input type="text" name="title" placeholder="e.g., User Profile Management" required
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">JTrack
+                            ID</label>
+                        <input type="text" name="jtrackId" placeholder="e.g., JIRA-1234" required
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
+                        <textarea name="description" rows="3" placeholder="Describe the change request..."
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">UAT Start
+                            Date</label>
+                        <input type="date" name="uatStartDate"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
+                    </div>
+
+                    <div class="flex gap-4 pt-4">
+                        <button type="button" @click="createModalOpen = false"
+                            class="flex-1 px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="flex-1 px-6 py-3 rounded-xl bg-purple-600 text-white font-semibold shadow-lg shadow-purple-200 hover:bg-purple-700 transition">
+                            Create CR
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

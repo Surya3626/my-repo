@@ -44,6 +44,21 @@ public class BugController {
         return "redirect:/bug-manager";
     }
 
+    @GetMapping("/bug-report")
+    public String bugReport(Model model) {
+        List<ChangeRequest> crs = changeRequestRepository.findAll();
+        List<Bug> allBugs = bugRepository.findAll();
+
+        // Group bugs by CR ID for easier access in the view
+        java.util.Map<Long, List<Bug>> bugsByCrId = allBugs.stream()
+                .filter(b -> b.getChangeRequest() != null)
+                .collect(Collectors.groupingBy(b -> b.getChangeRequest().getId()));
+
+        model.addAttribute("crs", crs);
+        model.addAttribute("bugsByCrId", bugsByCrId);
+        return "bug-report";
+    }
+
     @GetMapping("/cr/{id}")
     public String viewCR(@PathVariable Long id,
             @RequestParam(required = false) String status,
@@ -51,9 +66,20 @@ public class BugController {
             @RequestParam(required = false) String title,
             Model model) {
         ChangeRequest cr = changeRequestRepository.findById(id).orElseThrow();
+
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User currentUser = userRepository.findByUserId(userDetails.getUsername()).orElseThrow();
+
         List<Bug> bugs = bugRepository.findAll().stream()
                 .filter(b -> b.getChangeRequest() != null && b.getChangeRequest().getId().equals(id))
                 .collect(Collectors.toList());
+
+        // Filter for TESTING users: only see bugs raised by them
+        if (currentUser.getRoles().contains(Role.TESTING) && !currentUser.getRoles().contains(Role.ADMIN)) {
+            bugs = bugs.stream()
+                    .filter(b -> b.getRaisedBy() != null && b.getRaisedBy().getId().equals(currentUser.getId()))
+                    .collect(Collectors.toList());
+        }
 
         // Apply filters
         if (status != null && !status.isEmpty()) {
