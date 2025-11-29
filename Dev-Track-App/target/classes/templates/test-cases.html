@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Cases | DevTrack</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/output.css}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -43,6 +43,18 @@
             background-color: #F9FAFB;
             color: #9333EA;
         }
+
+        /* Modal Transition */
+        .modal {
+            transition: opacity 0.2s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 
@@ -67,7 +79,7 @@
 
         <!-- Navigation -->
         <nav class="flex-1 px-4 space-y-2 mt-4">
-            <a href="/"
+            <a th:href="@{/}"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-house w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Home</span>
@@ -75,7 +87,7 @@
                     x-show="!sidebarOpen">Home</div>
             </a>
 
-            <a href="/my-tasks"
+            <a th:href="@{/my-tasks}"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-list-check w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Tasks</span>
@@ -83,7 +95,7 @@
                     x-show="!sidebarOpen">My Tasks</div>
             </a>
 
-            <a href="/my-bugs" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
+            <a th:href="@{/my-bugs}" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-bug w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Bugs</span>
@@ -91,7 +103,7 @@
                     x-show="!sidebarOpen">My Bugs</div>
             </a>
 
-            <a href="/bug-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+            <a th:href="@{/bug-manager}" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-shield-virus w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Bug Manager</span>
@@ -99,7 +111,7 @@
                     x-show="!sidebarOpen">Bug Manager</div>
             </a>
 
-            <a href="/test-case-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+            <a th:href="@{/test-case-manager}" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
                 class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-vial w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Test Cases</span>
@@ -118,7 +130,7 @@
                     <p class="text-sm font-bold text-gray-900 truncate" sec:authentication="name">User</p>
                     <p class="text-xs text-gray-500 truncate">Pro Member</p>
                 </div>
-                <form action="/logout" method="post" x-show="sidebarOpen">
+                <form th:action="@{/logout}" method="post" x-show="sidebarOpen">
                     <button type="submit" class="text-gray-400 hover:text-red-500 transition">
                         <i class="fa-solid fa-right-from-bracket"></i>
                     </button>
@@ -140,7 +152,7 @@
         <!-- Header -->
         <header class="h-20 flex justify-between items-center px-8 lg:px-12 flex-shrink-0">
             <div class="flex items-center gap-4">
-                <a href="/test-case-manager" class="text-gray-500 hover:text-purple-600 transition">
+                <a th:href="@{/test-case-manager}" class="text-gray-500 hover:text-purple-600 transition">
                     <i class="fa-solid fa-arrow-left text-xl"></i>
                 </a>
                 <div>
@@ -230,81 +242,110 @@
                             </tr>
                             <tr th:if="${#lists.isEmpty(testCases)}">
                                 <td colspan="5" class="px-6 py-12 text-center text-gray-400">
-                                    <i class="fa-solid fa-vial text-3xl mb-2 block"></i>
-                                    No test cases yet. Add one to get started.
+                                    No test cases found for this Change Request.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-            </div>
 
+                <!-- Pagination Controls -->
+                <div class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 px-6"
+                    th:if="${totalPages > 1}">
+                    <div class="flex items-center gap-2">
+                        <p class="text-sm text-gray-500">
+                            Showing <span class="font-medium" th:text="${currentPage * 5 + 1}">1</span> to
+                            <span class="font-medium"
+                                th:text="${(currentPage + 1) * 5 > totalItems ? totalItems : (currentPage + 1) * 5}">10</span>
+                            of
+                            <span class="font-medium" th:text="${totalItems}">20</span> results
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <a th:href="@{/test-cases/cr/{id}(id=${cr.id}, page=${currentPage - 1})}"
+                            th:classappend="${currentPage == 0} ? 'pointer-events-none opacity-50' : ''"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-purple-600 transition">
+                            Previous
+                        </a>
+                        <div class="flex gap-1">
+                            <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                th:href="@{/test-cases/cr/{id}(id=${cr.id}, page=${i})}" th:text="${i + 1}"
+                                th:classappend="${currentPage == i} ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
+                                class="px-4 py-2 text-sm font-medium border rounded-lg transition">
+                                1
+                            </a>
+                        </div>
+                        <a th:href="@{/test-cases/cr/{id}(id=${cr.id}, page=${currentPage + 1})}"
+                            th:classappend="${currentPage == totalPages - 1} ? 'pointer-events-none opacity-50' : ''"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-purple-600 transition">
+                            Next
+                        </a>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
-    <!-- Add/Edit Test Case Modal -->
-    <div x-show="editModalOpen" x-cloak
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        @click.self="editModalOpen = false">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" @click.stop>
-            <div class="p-8">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800"
-                        x-text="currentTestCase.id ? 'Edit Test Case' : 'Add Test Case'"></h2>
-                    <button @click="editModalOpen = false" class="text-gray-400 hover:text-gray-600 transition">
-                        <i class="fa-solid fa-xmark text-2xl"></i>
-                    </button>
+    <!-- Edit/Add Test Case Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm modal"
+        :class="editModalOpen ? 'active' : ''">
+        <div class="bg-white w-full max-w-2xl rounded-3xl p-8 m-4 relative shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800"
+                    x-text="currentTestCase.id ? 'Edit Test Case' : 'Add Test Case'">
+                </h2>
+                <button @click="editModalOpen = false" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+
+            <form th:action="@{/test-cases/save}" method="post" class="space-y-6">
+                <input type="hidden" name="crId" th:value="${cr.id}">
+                <input type="hidden" name="id" x-model="currentTestCase.id">
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Test Case
+                        ID</label>
+                    <input type="text" name="testCaseId" x-model="currentTestCase.testCaseId" placeholder="e.g., TC-001"
+                        required
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
                 </div>
 
-                <form action="/test-cases/save" method="post" class="space-y-6">
-                    <input type="hidden" name="crId" th:value="${cr.id}">
-                    <input type="hidden" name="id" x-model="currentTestCase.id">
+                <div>
+                    <label
+                        class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
+                    <textarea name="description" x-model="currentTestCase.description" rows="3"
+                        placeholder="Describe the test case..." required
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all"></textarea>
+                </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Test Case
-                            ID</label>
-                        <input type="text" name="testCaseId" x-model="currentTestCase.testCaseId"
-                            placeholder="e.g., TC-001" required
-                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Status</label>
+                    <select name="status" x-model="currentTestCase.status"
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
+                        <option value="PENDING">PENDING</option>
+                        <option value="PASS">PASS</option>
+                        <option value="FAIL">FAIL</option>
+                    </select>
+                </div>
 
-                    <div>
-                        <label
-                            class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
-                        <textarea name="description" x-model="currentTestCase.description" rows="3"
-                            placeholder="Describe the test case..." required
-                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all"></textarea>
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Remarks</label>
+                    <textarea name="remarks" x-model="currentTestCase.remarks" rows="2" placeholder="Any remarks..."
+                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all"></textarea>
+                </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Status</label>
-                        <select name="status" x-model="currentTestCase.status"
-                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all">
-                            <option value="PENDING">PENDING</option>
-                            <option value="PASS">PASS</option>
-                            <option value="FAIL">FAIL</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label
-                            class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Remarks</label>
-                        <textarea name="remarks" x-model="currentTestCase.remarks" rows="2" placeholder="Any remarks..."
-                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-purple-500 outline-none transition-all"></textarea>
-                    </div>
-
-                    <div class="flex gap-4 pt-4">
-                        <button type="button" @click="editModalOpen = false"
-                            class="flex-1 px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                            class="flex-1 px-6 py-3 rounded-xl bg-purple-600 text-white font-semibold shadow-lg shadow-purple-200 hover:bg-purple-700 transition">
-                            Save Test Case
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" @click="editModalOpen = false"
+                        class="flex-1 px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-6 py-3 rounded-xl bg-purple-600 text-white font-semibold shadow-lg shadow-purple-200 hover:bg-purple-700 transition">
+                        Save Test Case
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

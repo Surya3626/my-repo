@@ -13,6 +13,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -61,39 +65,22 @@ public class BugController {
 
     @GetMapping("/cr/{id}")
     public String viewCR(@PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
             @RequestParam(required = false) String title,
             Model model) {
         ChangeRequest cr = changeRequestRepository.findById(id).orElseThrow();
 
-        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User currentUser = userRepository.findByUserId(userDetails.getUsername()).orElseThrow();
-
-        List<Bug> bugs = bugRepository.findAll().stream()
-                .filter(b -> b.getChangeRequest() != null && b.getChangeRequest().getId().equals(id))
-                .collect(Collectors.toList());
-
-        // Filter for TESTING users: only see bugs raised by them
-        if (currentUser.getRoles().contains(Role.TESTING) && !currentUser.getRoles().contains(Role.ADMIN)) {
-            bugs = bugs.stream()
-                    .filter(b -> b.getRaisedBy() != null && b.getRaisedBy().getId().equals(currentUser.getId()))
-                    .collect(Collectors.toList());
-        }
-
-        // Apply filters
-        if (status != null && !status.isEmpty()) {
-            bugs.removeIf(b -> !b.getStatus().equalsIgnoreCase(status));
-        }
-        if (priority != null && !priority.isEmpty()) {
-            bugs.removeIf(b -> !b.getPriority().equalsIgnoreCase(priority));
-        }
-        if (title != null && !title.isEmpty()) {
-            bugs.removeIf(b -> !b.getTitle().toLowerCase().contains(title.toLowerCase()));
-        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedDate").descending());
+        Page<Bug> bugPage = bugRepository.findByChangeRequestId(id, pageable);
 
         model.addAttribute("cr", cr);
-        model.addAttribute("bugs", bugs);
+        model.addAttribute("bugs", bugPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", bugPage.getTotalPages());
+        model.addAttribute("totalItems", bugPage.getTotalElements());
 
         List<User> developers = userRepository.findAll().stream()
                 .filter(u -> u.getRoles().contains(Role.DEVELOPER))
@@ -126,27 +113,22 @@ public class BugController {
     }
 
     @GetMapping("/my-bugs")
-    public String myBugs(@RequestParam(required = false) String status,
+    public String myBugs(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
             @RequestParam(required = false) String title,
             Model model) {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User currentUser = userRepository.findByUserId(userDetails.getUsername()).orElseThrow();
 
-        List<Bug> myBugs = bugRepository.findByAssignedTo(currentUser);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedDate").descending());
+        Page<Bug> bugPage = bugRepository.findByAssignedTo(currentUser, pageable);
 
-        // Apply filters
-        if (status != null && !status.isEmpty()) {
-            myBugs.removeIf(b -> !b.getStatus().equalsIgnoreCase(status));
-        }
-        if (priority != null && !priority.isEmpty()) {
-            myBugs.removeIf(b -> !b.getPriority().equalsIgnoreCase(priority));
-        }
-        if (title != null && !title.isEmpty()) {
-            myBugs.removeIf(b -> !b.getTitle().toLowerCase().contains(title.toLowerCase()));
-        }
-
-        model.addAttribute("bugs", myBugs);
+        model.addAttribute("bugs", bugPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", bugPage.getTotalPages());
+        model.addAttribute("totalItems", bugPage.getTotalElements());
         return "my-bugs";
     }
 

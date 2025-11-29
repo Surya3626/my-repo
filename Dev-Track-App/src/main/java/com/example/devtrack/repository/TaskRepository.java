@@ -8,6 +8,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TaskRepository extends JpaRepository<Task, Long> {
+public interface TaskRepository
+        extends JpaRepository<Task, Long>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<Task> {
     List<Task> findByAssignedUser(User user);
+
+    org.springframework.data.domain.Page<Task> findByAssignedUser(User user,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -8,5 +8,11 @@ import java.util.List;
 public interface BugRepository extends JpaRepository<Bug, Long> {
     List<Bug> findByAssignedTo(User user);
 
+    org.springframework.data.domain.Page<Bug> findByAssignedTo(User user,
+            org.springframework.data.domain.Pageable pageable);
+
     List<Bug> findByRaisedBy(User user);
+
+    org.springframework.data.domain.Page<Bug> findByChangeRequestId(Long changeRequestId,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Case Manager | DevTrack</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/output.css}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -63,7 +63,7 @@
 
         <!-- Navigation -->
         <nav class="flex-1 px-4 space-y-2 mt-4">
-            <a href="/"
+            <a th:href="@{/}"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-house w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Home</span>
@@ -71,7 +71,7 @@
                     x-show="!sidebarOpen">Home</div>
             </a>
 
-            <a href="/my-tasks"
+            <a th:href="@{/my-tasks}"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-list-check w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Tasks</span>
@@ -79,7 +79,7 @@
                     x-show="!sidebarOpen">My Tasks</div>
             </a>
 
-            <a href="/my-bugs" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
+            <a th:href="@{/my-bugs}" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-bug w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Bugs</span>
@@ -87,7 +87,7 @@
                     x-show="!sidebarOpen">My Bugs</div>
             </a>
 
-            <a href="/bug-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+            <a th:href="@{/bug-manager}" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-shield-virus w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Bug Manager</span>
@@ -95,7 +95,7 @@
                     x-show="!sidebarOpen">Bug Manager</div>
             </a>
 
-            <a href="/test-case-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+            <a th:href="@{/test-case-manager}" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
                 class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-vial w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Test Cases</span>
@@ -114,7 +114,7 @@
                     <p class="text-sm font-bold text-gray-900 truncate" sec:authentication="name">User</p>
                     <p class="text-xs text-gray-500 truncate">Pro Member</p>
                 </div>
-                <form action="/logout" method="post" x-show="sidebarOpen">
+                <form th:action="@{/logout}" method="post" x-show="sidebarOpen">
                     <button type="submit" class="text-gray-400 hover:text-red-500 transition">
                         <i class="fa-solid fa-right-from-bracket"></i>
                     </button>
@@ -175,7 +175,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <tr th:each="cr : ${crs}" class="hover:bg-gray-50 transition cursor-pointer"
-                                th:onclick="'window.location.href=\'/test-cases/cr/' + ${cr.id} + '\''">
+                                th:onclick="'window.location.href=\'' + @{/test-cases/cr/} + ${cr.id} + '\''">
                                 <td class="px-6 py-4">
                                     <div class="font-semibold text-gray-800" th:text="${cr.title}">User Profile
                                         Management</div>
@@ -218,7 +218,7 @@
                     </button>
                 </div>
 
-                <form action="/test-cases/create-cr" method="post" class="space-y-6">
+                <form th:action="@{/test-cases/create-cr}" method="post" class="space-y-6">
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">CR
                             Title</label>

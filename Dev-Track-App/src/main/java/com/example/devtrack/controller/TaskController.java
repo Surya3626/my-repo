@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -48,6 +52,8 @@ public class TaskController {
                         @RequestParam(required = false) String sitDate,
                         @RequestParam(required = false) String uatDate,
                         @RequestParam(required = false) String prodDate,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "5") int size,
                         Model model) {
 
                 UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication()
@@ -58,45 +64,38 @@ public class TaskController {
                         return "redirect:/my-tasks";
                 }
 
-                // Fetch all tasks and filter manually
-                List<Task> tasks = taskRepository.findAll();
+                org.springframework.data.jpa.domain.Specification<Task> spec = com.example.devtrack.specification.TaskSpecification
+                                .filterTasks(
+                                                status, priority, developerName, type, branch, jtrackId, devStartDate,
+                                                sitDate, uatDate, prodDate);
 
-                if (status != null && !status.isEmpty()) {
-                        tasks.removeIf(t -> t.getStatus() == null || !t.getStatus().equalsIgnoreCase(status));
-                }
-                if (priority != null && !priority.isEmpty()) {
-                        tasks.removeIf(t -> t.getPriority() == null || !t.getPriority().equalsIgnoreCase(priority));
-                }
-                if (developerName != null && !developerName.isEmpty()) {
-                        tasks.removeIf(t -> t.getDeveloperName() == null
-                                        || !t.getDeveloperName().toLowerCase().contains(developerName.toLowerCase()));
-                }
-                if (type != null && !type.isEmpty()) {
-                        tasks.removeIf(t -> t.getType() == null || !t.getType().equalsIgnoreCase(type));
-                }
-                if (branch != null && !branch.isEmpty()) {
-                        tasks.removeIf(t -> t.getBranch() == null
-                                        || !t.getBranch().toLowerCase().contains(branch.toLowerCase()));
-                }
-                if (jtrackId != null && !jtrackId.isEmpty()) {
-                        tasks.removeIf(t -> t.getJtrackId() == null
-                                        || !t.getJtrackId().toLowerCase().contains(jtrackId.toLowerCase()));
-                }
-                if (devStartDate != null && !devStartDate.isEmpty()) {
-                        tasks.removeIf(t -> t.getDevStartDate() == null
-                                        || !t.getDevStartDate().toString().equals(devStartDate));
-                }
-                if (sitDate != null && !sitDate.isEmpty()) {
-                        tasks.removeIf(t -> t.getSitDate() == null || !t.getSitDate().toString().equals(sitDate));
-                }
-                if (uatDate != null && !uatDate.isEmpty()) {
-                        tasks.removeIf(t -> t.getUatDate() == null || !t.getUatDate().toString().equals(uatDate));
-                }
-                if (prodDate != null && !prodDate.isEmpty()) {
-                        tasks.removeIf(t -> t.getProdDate() == null || !t.getProdDate().toString().equals(prodDate));
-                }
+                Pageable pageable = PageRequest.of(page, size, Sort.by("devStartDate").descending());
+                Page<Task> taskPage = taskRepository.findAll(spec, pageable);
 
-                model.addAttribute("tasks", tasks);
+                model.addAttribute("tasks", taskPage); // Pass the Page object, not just content
+                model.addAttribute("currentPage", page);
+                model.addAttribute("totalPages", taskPage.getTotalPages());
+                model.addAttribute("totalItems", taskPage.getTotalElements());
+
+                // Calculate task statistics (still need all tasks for stats, or maybe stats
+                // based on filter? usually all tasks)
+                // For performance, we might want a separate stats query, but for now findAll()
+                // is okay for stats if dataset isn't huge.
+                // However, let's keep stats global for now as per original design, or filtered?
+                // The original code filtered the list in memory. Let's stick to global stats
+                // for the cards to show overall health.
+                List<Task> allTasks = taskRepository.findAll();
+                long totalTasks = allTasks.size();
+                long inProgressTasks = allTasks.stream().filter(t -> "In Progress".equals(t.getStatus())).count();
+                long toDoTasks = allTasks.stream().filter(t -> "To Do".equals(t.getStatus())).count();
+                long blockedTasks = allTasks.stream().filter(t -> "Blocked".equals(t.getStatus())).count();
+                long doneTasks = allTasks.stream().filter(t -> "Done".equals(t.getStatus())).count();
+
+                model.addAttribute("totalTasks", totalTasks);
+                model.addAttribute("inProgressTasks", inProgressTasks);
+                model.addAttribute("toDoTasks", toDoTasks);
+                model.addAttribute("blockedTasks", blockedTasks);
+                model.addAttribute("doneTasks", doneTasks);
 
                 // Add users for "Assigned To" dropdown
                 List<User> developers = userRepository.findAll().stream()
@@ -104,17 +103,36 @@ public class TaskController {
                                 .toList();
                 model.addAttribute("developers", developers);
 
-                return "dashboard_v3"; // Finalized Design 3
+                // Add filter params to model to keep them in pagination links
+                model.addAttribute("status", status);
+                model.addAttribute("priority", priority);
+                model.addAttribute("developerName", developerName);
+                model.addAttribute("type", type);
+                model.addAttribute("branch", branch);
+                model.addAttribute("jtrackId", jtrackId);
+                model.addAttribute("devStartDate", devStartDate);
+                model.addAttribute("sitDate", sitDate);
+                model.addAttribute("uatDate", uatDate);
+                model.addAttribute("prodDate", prodDate);
+
+                return "dashboard_v3";
         }
 
         @GetMapping("/my-tasks")
-        public String myTasks(Model model) {
+        public String myTasks(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "5") int size,
+                        Model model) {
                 UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
                 User currentUser = userRepository.findByUserId(userDetails.getUsername()).orElseThrow();
 
-                List<Task> myTasks = taskRepository.findByAssignedUser(currentUser);
-                model.addAttribute("tasks", myTasks);
+                Pageable pageable = PageRequest.of(page, size, Sort.by("devStartDate").descending());
+                Page<Task> taskPage = taskRepository.findByAssignedUser(currentUser, pageable);
+
+                model.addAttribute("tasks", taskPage.getContent());
+                model.addAttribute("currentPage", page);
+                model.addAttribute("totalPages", taskPage.getTotalPages());
+                model.addAttribute("totalItems", taskPage.getTotalElements());
                 model.addAttribute("newTask", new Task());
                 return "my-tasks";
         }
@@ -240,7 +258,7 @@ public class TaskController {
                 return "dashboard_v4";
         }
 
-        @PostConstruct
+     //   @PostConstruct
         public void initData() {
                 userRepository.deleteAll();
                 taskRepository.deleteAll();

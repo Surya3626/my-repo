@@ -9,4 +9,7 @@ import java.util.List;
 @Repository
 public interface TestCaseRepository extends JpaRepository<TestCase, Long> {
     List<TestCase> findByChangeRequestId(Long changeRequestId);
+
+    org.springframework.data.domain.Page<TestCase> findByChangeRequestId(Long changeRequestId,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -8,6 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,11 +33,20 @@ public class TestCaseController {
     }
 
     @GetMapping("/test-cases/cr/{crId}")
-    public String viewTestCases(@PathVariable Long crId, Model model) {
+    public String viewTestCases(@PathVariable Long crId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            Model model) {
         ChangeRequest cr = changeRequestRepository.findById(crId).orElseThrow();
-        List<TestCase> testCases = testCaseRepository.findByChangeRequestId(crId);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Page<TestCase> testCasePage = testCaseRepository.findByChangeRequestId(crId, pageable);
+
         model.addAttribute("cr", cr);
-        model.addAttribute("testCases", testCases);
+        model.addAttribute("testCases", testCasePage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", testCasePage.getTotalPages());
+        model.addAttribute("totalItems", testCasePage.getTotalElements());
         return "test-cases";
     }
 

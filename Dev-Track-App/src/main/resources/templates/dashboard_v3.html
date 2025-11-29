@@ -5,17 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DevTrack | Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/output.css}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #F3E8FF;
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -44,7 +44,6 @@
             color: #9333EA;
         }
 
-        /* Modal Transition */
         .modal {
             transition: opacity 0.2s ease-in-out;
             opacity: 0;
@@ -76,16 +75,15 @@
 
         <!-- Navigation -->
         <nav class="flex-1 px-4 space-y-2 mt-4">
-            <a href="/"
+            <a th:href="@{/}"
                 class="sidebar-link active flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-house w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Home</span>
-                <!-- Tooltip for collapsed state -->
                 <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none"
                     x-show="!sidebarOpen">Home</div>
             </a>
 
-            <a href="/my-tasks"
+            <a th:href="@{/my-tasks}"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-list-check w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Tasks</span>
@@ -93,7 +91,7 @@
                     x-show="!sidebarOpen">My Tasks</div>
             </a>
 
-            <a href="/my-bugs" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
+            <a th:href="@{/my-bugs}" sec:authorize="hasAnyRole('DEVELOPER', 'ADMIN')"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-bug w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">My Bugs</span>
@@ -101,7 +99,7 @@
                     x-show="!sidebarOpen">My Bugs</div>
             </a>
 
-            <a href="/bug-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+            <a th:href="@{/bug-manager}" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-shield-virus w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Bug Manager</span>
@@ -109,7 +107,7 @@
                     x-show="!sidebarOpen">Bug Manager</div>
             </a>
 
-            <a href="/test-case-manager" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
+            <a th:href="@{/test-case-manager}" sec:authorize="hasAnyRole('TESTING', 'ADMIN')"
                 class="sidebar-link flex items-center px-4 py-3 rounded-xl text-gray-500 transition-colors group relative">
                 <i class="fa-solid fa-vial w-6 text-lg text-center"></i>
                 <span class="ml-3 transition-opacity duration-300" x-show="sidebarOpen">Test Cases</span>
@@ -128,7 +126,7 @@
                     <p class="text-sm font-bold text-gray-900 truncate" sec:authentication="name">User</p>
                     <p class="text-xs text-gray-500 truncate">Pro Member</p>
                 </div>
-                <form action="/logout" method="post" x-show="sidebarOpen">
+                <form th:action="@{/logout}" method="post" x-show="sidebarOpen">
                     <button type="submit" class="text-gray-400 hover:text-red-500 transition">
                         <i class="fa-solid fa-right-from-bracket"></i>
                     </button>
@@ -172,9 +170,76 @@
         <!-- Scrollable Area -->
         <main class="flex-1 overflow-y-auto p-8 lg:px-12 pb-12">
 
+            <!-- Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Tasks Card -->
+                <!--<div
+                    class="bg-white rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300">
+                    <div
+                        class="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-purple-50 group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-gray-500 text-sm font-medium">Total Tasks</p>
+                        <h3 class="text-4xl font-bold text-gray-800 mt-2" th:text="${totalTasks}">24</h3>
+                        <div class="flex items-center gap-2 mt-4 text-sm font-medium text-green-600">
+                            <i class="fa-solid fa-arrow-trend-up"></i>
+                            <span>+12% this week</span>
+                        </div>
+                    </div>
+                </div>  -->
+
+                <!-- In Progress Card -->
+                <div
+                    class="bg-white rounded-3xl p-4 shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300">
+                    <div
+                        class="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-pink-50 group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-gray-500 text-sm font-medium">In Progress</p>
+                        <h3 class="text-4xl font-bold text-gray-800 mt-2" th:text="${inProgressTasks}">8</h3>
+                        <div class="flex items-center gap-2 mt-4 text-sm font-medium text-purple-600">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Active Sprints</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- To Do Card -->
+                <div
+                    class="bg-white rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300">
+                    <div
+                        class="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-blue-50 group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-gray-500 text-sm font-medium">To Do</p>
+                        <h3 class="text-4xl font-bold text-gray-800 mt-2" th:text="${toDoTasks}">5</h3>
+                        <div class="flex items-center gap-2 mt-4 text-sm font-medium text-orange-500">
+                            <i class="fa-regular fa-clock"></i>
+                            <span>Pending Review</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blocked Card -->
+                <div
+                    class="bg-white rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300">
+                    <div
+                        class="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-red-50 group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-gray-500 text-sm font-medium">Blocked</p>
+                        <h3 class="text-4xl font-bold text-gray-800 mt-2" th:text="${blockedTasks}">2</h3>
+                        <div class="flex items-center gap-2 mt-4 text-sm font-medium text-red-500">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span>Needs Attention</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Filters -->
             <div class="bg-white rounded-3xl shadow-sm p-6 mb-8">
-                <form action="/" method="get" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <form th:action="@{/}" method="get" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     <input type="text" name="jtrackId" placeholder="JTrack ID"
                         class="px-4 py-2 rounded-xl bg-gray-50 border border-gray-100 text-sm focus:border-purple-500 outline-none">
                     <input type="text" name="developerName" placeholder="Developer Name"
@@ -201,8 +266,8 @@
             </div>
 
             <!-- Task Overview -->
-            <div class="bg-white rounded-3xl shadow-sm p-8 h-full flex flex-col">
-                <div class="flex justify-between items-center mb-8 flex-shrink-0">
+            <div class="bg-white rounded-3xl shadow-sm p-8">
+                <div class="flex justify-between items-center mb-8">
                     <h3 class="text-lg font-bold text-gray-800">Task Overview</h3>
                     <button @click="createModalOpen = true"
                         class="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition shadow-lg shadow-gray-900/20">
@@ -210,7 +275,7 @@
                     </button>
                 </div>
 
-                <div class="overflow-auto flex-1">
+                <div class="overflow-x-auto">
                     <table class="w-full min-w-[1500px]">
                         <thead class="sticky top-0 bg-white z-10">
                             <tr
@@ -226,14 +291,17 @@
                                 <th class="pb-4">UAT Date</th>
                                 <th class="pb-4">PROD Date</th>
                                 <th class="pb-4">Status</th>
-                                <th class="pb-4 text-right pr-4">Action</th>
+                                <th class="pb-4 pr-4 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-50">
-                            <tr th:each="task : ${tasks}" class="group hover:bg-gray-50 transition-colors">
-                                <td class="py-4 pl-4 text-sm font-mono text-gray-500" th:text="${task.jtrackId}"></td>
-                                <td class="py-4 text-sm text-gray-600" th:text="${task.type}"></td>
-                                <td class="py-4 font-semibold text-gray-800 text-sm" th:text="${task.taskName}"></td>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr th:each="task : ${tasks.content}" class="hover:bg-gray-50 transition">
+                                <td class="py-4 pl-4 text-sm font-medium text-gray-800" th:text="${task.jtrackId}"></td>
+                                <td class="py-4 text-sm text-gray-600">
+                                    <span class="px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+                                        th:text="${task.type}"></span>
+                                </td>
+                                <td class="py-4 text-sm font-medium text-gray-800" th:text="${task.taskName}"></td>
                                 <td class="py-4 text-sm text-gray-500 font-mono" th:text="${task.branch}"></td>
                                 <td class="py-4">
                                     <div class="flex items-center gap-2">
@@ -288,6 +356,45 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination -->
+                <div class="mt-6 flex items-center justify-between" th:if="${totalPages > 1}">
+                    <div class="text-sm text-gray-500">
+                        Showing <span th:text="${currentPage * 5 + 1}">1</span> to <span
+                            th:text="${(currentPage + 1) * 5 > totalItems ? totalItems : (currentPage + 1) * 5}">10</span>
+                        of <span th:text="${totalItems}">20</span> results
+                    </div>
+                    <div class="flex gap-2">
+                        <a th:if="${currentPage > 0}"
+                            th:href="@{/(page=${currentPage - 1}, size=${size}, status=${status}, priority=${priority}, developerName=${developerName}, type=${type}, branch=${branch}, jtrackId=${jtrackId}, devStartDate=${devStartDate}, sitDate=${sitDate}, uatDate=${uatDate}, prodDate=${prodDate})}"
+                            class="px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                            Previous
+                        </a>
+                        <span th:unless="${currentPage > 0}"
+                            class="px-4 py-2 border border-gray-100 rounded-xl text-sm font-medium text-gray-300 cursor-not-allowed">
+                            Previous
+                        </span>
+
+                        <div class="flex gap-1">
+                            <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                                <a th:href="@{/(page=${i}, size=${size}, status=${status}, priority=${priority}, developerName=${developerName}, type=${type}, branch=${branch}, jtrackId=${jtrackId}, devStartDate=${devStartDate}, sitDate=${sitDate}, uatDate=${uatDate}, prodDate=${prodDate})}"
+                                    th:text="${i + 1}"
+                                    th:class="${currentPage == i} ? 'px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium shadow-sm shadow-purple-200' : 'px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition'">
+                                </a>
+                            </th:block>
+                        </div>
+
+                        <a th:if="${currentPage < totalPages - 1}"
+                            th:href="@{/(page=${currentPage + 1}, size=${size}, status=${status}, priority=${priority}, developerName=${developerName}, type=${type}, branch=${branch}, jtrackId=${jtrackId}, devStartDate=${devStartDate}, sitDate=${sitDate}, uatDate=${uatDate}, prodDate=${prodDate})}"
+                            class="px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                            Next
+                        </a>
+                        <span th:unless="${currentPage < totalPages - 1}"
+                            class="px-4 py-2 border border-gray-100 rounded-xl text-sm font-medium text-gray-300 cursor-not-allowed">
+                            Next
+                        </span>
+                    </div>
+                </div>
             </div>
 
         </main>
@@ -304,7 +411,7 @@
 
             <h2 class="text-2xl font-bold text-gray-800 mb-8">Create New Task</h2>
 
-            <form action="/task/create" method="post" class="space-y-6">
+            <form th:action="@{/task/create}" method="post" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Task
@@ -403,7 +510,7 @@
 
             <h2 class="text-2xl font-bold text-gray-800 mb-8">Update Task</h2>
 
-            <form action="/task/update" method="post" class="space-y-6">
+            <form th:action="@{/task/update}" method="post" class="space-y-6">
                 <input type="hidden" name="taskId" :value="selectedTask.id">
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -519,8 +626,6 @@
         </div>
     </div>
 
-    <!-- Alpine.js for interactivity -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </body>
 
 </html>

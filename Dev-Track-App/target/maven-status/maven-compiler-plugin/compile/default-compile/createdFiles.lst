@@ -6,6 +6,7 @@ com\example\devtrack\model\ChangeRequest.class
 com\example\devtrack\DevTrackApplication.class
 com\example\devtrack\model\User.class
 com\example\devtrack\security\JwtAuthenticationFilter.class
+com\example\devtrack\specification\TaskSpecification.class
 com\example\devtrack\service\CustomUserDetailsService.class
 com\example\devtrack\repository\TestCaseRepository.class
 com\example\devtrack\repository\ChangeRequestRepository.class
