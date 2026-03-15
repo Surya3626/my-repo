@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#F8FAFC] text-slate-900 font-sans antialiased;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(160, 49%, 98%, 1) 0, transparent 50%), 
+      radial-gradient(at 100% 100%, hsla(220, 16%, 98%, 1) 0, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white bg-opacity-70 backdrop-blur-lg border border-white border-opacity-30 shadow-glass rounded-2xl;
+  }
+
+  .btn-deltascribe {
+    @apply bg-deltascribe-gradient text-white px-6 py-2.5 rounded-xl font-semibold hover:opacity-90 transition-all shadow-lg active:scale-95 shadow-deltascribe-emerald/20;
+  }
+
+  .sidebar-link {
+    @apply flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200;
+  }
+
+  .sidebar-link-active {
+    @apply bg-deltascribe-gradient text-white shadow-md shadow-deltascribe-emerald/20;
+  }
+
+  .sidebar-link-inactive {
+    @apply text-gray-500 hover:bg-gray-100 hover:text-deltascribe-emerald;
+  }
+
+  .status-badge {
+    @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-deltascribe-emerald bg-opacity-20 rounded-full;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-opacity-40;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-deltascribe-emerald bg-opacity-20 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-opacity-40;
+}
