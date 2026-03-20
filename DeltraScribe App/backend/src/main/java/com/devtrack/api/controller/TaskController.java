@@ -12,6 +12,10 @@ import com.devtrack.api.services.WorkflowExecutionService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -55,17 +59,32 @@ public class TaskController {
     private AttachmentRepository attachmentRepository;
 
     @GetMapping
-    public List<Task> getAllTasks() {
-        return taskRepository.findAllOptimized();
+    public Page<Task> getAllTasks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "true") boolean showClosed) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        if (showClosed) {
+            return taskRepository.findAllOptimized(pageable);
+        } else {
+            return taskRepository.findAllOptimizedByStatusNot("CLOSED", pageable);
+        }
     }
 
     @GetMapping("/my")
-    public List<Task> getMyTasks() {
+    public Page<Task> getMyTasks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "true") boolean showClosed) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).orElseThrow();
-        return taskRepository.findAllOptimized().stream()
-                .filter(t -> t.getAssignedDeveloper() != null && t.getAssignedDeveloper().getId().equals(user.getId()))
-                .toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        
+        if (showClosed) {
+            return taskRepository.findAllOptimizedByAssignedDeveloperId(user.getId(), pageable);
+        } else {
+            return taskRepository.findAllOptimizedByAssignedDeveloperIdAndStatusNot(user.getId(), "CLOSED", pageable);
+        }
     }
 
     @GetMapping("/{id}")

@@ -6,6 +6,10 @@ import com.devtrack.api.model.Role;
 import com.devtrack.api.repository.TestCaseRepository;
 import com.devtrack.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,8 +29,16 @@ public class TestCaseController {
     private UserRepository userRepository;
 
     @GetMapping
-    public List<TestCase> getAllTestCases() {
-        return testCaseRepository.findAll();
+    public Page<TestCase> getAllTestCases(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "true") boolean showClosed) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        if (showClosed) {
+            return testCaseRepository.findAll(pageable);
+        } else {
+            return testCaseRepository.findByStatusNot("CLOSED", pageable);
+        }
     }
 
     @GetMapping("/task/{taskId}")

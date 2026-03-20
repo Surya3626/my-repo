@@ -55,13 +55,16 @@ const TestingDashboard = () => {
         try {
             // Fetch both types of tasks to restore SIT/UAT section functionality
             const [tasksRes, bugsRes] = await Promise.all([
-                apiClient.get('/tasks'),
-                apiClient.get('/bugs')
+                apiClient.get('/tasks', { params: { size: 1000, showClosed: true } }),
+                apiClient.get('/bugs', { params: { size: 1000, showClosed: true } })
             ]);
 
+            const tasksData = tasksRes.data.content || tasksRes.data;
+            const bugsData = bugsRes.data.content || bugsRes.data;
+
             const combined = [
-                ...tasksRes.data.map(t => ({ ...t, entityType: 'task' })),
-                ...bugsRes.data.map(b => ({ ...b, entityType: 'bug' }))
+                ...tasksData.map(t => ({ ...t, entityType: 'task' })),
+                ...bugsData.map(b => ({ ...b, entityType: 'bug' }))
             ];
 
             setAllTasks(combined);

@@ -8,6 +8,7 @@ import apiClient from '../api/client';
 import * as XLSX from 'xlsx';
 import authService from '../services/authService';
 import TestCaseModal from '../components/TestCaseModal';
+import Pagination from '../components/Pagination';
 import { useNotification } from '../context/NotificationContext';
 
 const TestCases = () => {
@@ -20,22 +21,40 @@ const TestCases = () => {
     const [expandedTasks, setExpandedTasks] = useState({});
     const [showClosed, setShowClosed] = useState(false);
     
+    // Pagination states
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const pageSize = 10;
+    
     const { showNotification } = useNotification();
     const currentUser = authService.getCurrentUser();
     const isQA = currentUser?.roles?.some(r => r.includes('TESTER') || r.includes('TESTADMIN') || r.includes('ADMIN'));
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = async (pageNumber = 0) => {
         setIsLoading(true);
         try {
             const [tcRes, tasksRes] = await Promise.all([
-                apiClient.get('/testcases'),
+                apiClient.get('/testcases', {
+                    params: {
+                        page: pageNumber,
+                        size: pageSize,
+                        showClosed: showClosed
+                    }
+                }),
                 apiClient.get('/test-case-tasks')
             ]);
-            setTestCases(tcRes.data);
+            
+            if (tcRes.data.content) {
+                setTestCases(tcRes.data.content);
+                setTotalPages(tcRes.data.totalPages);
+                setTotalElements(tcRes.data.totalElements);
+                setPage(tcRes.data.number);
+            } else {
+                setTestCases(tcRes.data);
+                setTotalPages(1);
+                setPage(0);
+            }
             setTasks(tasksRes.data);
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -44,6 +63,10 @@ const TestCases = () => {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchData(0);
+    }, [showClosed]);
 
     const toggleTask = (taskId) => {
         setExpandedTasks(prev => ({
@@ -245,11 +268,18 @@ const TestCases = () => {
                 )}
             </div>
 
+            <Pagination 
+                currentPage={page} 
+                totalPages={totalPages} 
+                onPageChange={fetchData} 
+                isLoading={isLoading} 
+            />
+
             <TestCaseModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 item={selectedTestCase}
-                onSave={fetchData}
+                onSave={() => fetchData(page)}
             />
         </div>
     );

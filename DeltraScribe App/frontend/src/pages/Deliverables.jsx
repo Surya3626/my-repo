@@ -33,14 +33,17 @@ const Deliverables = () => {
             const uatStatus = configService.getConfig('STATUS_UAT_DEPLOYED', 'UAT_COMPLETED');
             const prodStatus = configService.getConfig('STATUS_PROD_READY', 'CLOSED');
 
-            const [tasksRes, bugTasksRes] = await Promise.all([
-                apiClient.get('/tasks'),
-                apiClient.get('/bugs')
+            const [tasksRes, bugsRes] = await Promise.all([
+                apiClient.get('/tasks', { params: { size: 1000, showClosed: true } }),
+                apiClient.get('/bugs', { params: { size: 1000, showClosed: true } })
             ]);
 
+            const tasksData = tasksRes.data.content || tasksRes.data;
+            const bugsData = bugsRes.data.content || bugsRes.data;
+
             const allItems = [
-                ...tasksRes.data.map(t => ({ ...t, entityType: 'task' })),
-                ...bugTasksRes.data.map(b => ({ ...b, entityType: 'bug' }))
+                ...tasksData.map(t => ({ ...t, entityType: 'task' })),
+                ...bugsData.map(b => ({ ...b, entityType: 'bug' }))
             ];
 
             setSections({

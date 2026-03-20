@@ -8,6 +8,7 @@ import apiClient from '../api/client';
 import * as XLSX from 'xlsx';
 import authService from '../services/authService';
 import BugModal from '../components/BugModal';
+import Pagination from '../components/Pagination';
 import { useNotification } from '../context/NotificationContext';
 
 const Bugs = () => {
@@ -22,19 +23,41 @@ const Bugs = () => {
     const [severityFilter, setSeverityFilter] = useState('');
     const [showClosed, setShowClosed] = useState(false);
     
+    // Pagination states
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const pageSize = 10;
+    
     const { showNotification } = useNotification();
     const currentUser = authService.getCurrentUser();
     const isTester = currentUser?.roles?.some(r => r.includes('TESTER') || r.includes('TESTADMIN'));
     const isDeveloper = currentUser?.roles?.some(r => r.includes('DEVELOPER'));
 
-    const fetchData = async () => {
+    const fetchData = async (pageNumber = 0) => {
         setIsLoading(true);
         try {
             const [bugsRes, tasksRes] = await Promise.all([
-                apiClient.get('/bugs'),
+                apiClient.get('/bugs', {
+                    params: {
+                        page: pageNumber,
+                        size: pageSize,
+                        showClosed: showClosed
+                    }
+                }),
                 apiClient.get('/bugtasks')
             ]);
-            setBugs(bugsRes.data);
+            
+            if (bugsRes.data.content) {
+                setBugs(bugsRes.data.content);
+                setTotalPages(bugsRes.data.totalPages);
+                setTotalElements(bugsRes.data.totalElements);
+                setPage(bugsRes.data.number);
+            } else {
+                setBugs(bugsRes.data);
+                setTotalPages(1);
+                setPage(0);
+            }
             setTasks(tasksRes.data);
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -46,8 +69,8 @@ const Bugs = () => {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        fetchData(0);
+    }, [showClosed]);
 
 
     const toggleTask = (taskId) => {
@@ -383,11 +406,18 @@ const Bugs = () => {
                 )}
             </div>
 
+            <Pagination 
+                currentPage={page} 
+                totalPages={totalPages} 
+                onPageChange={fetchData} 
+                isLoading={isLoading} 
+            />
+
             <BugModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 item={selectedBug}
-                onSave={fetchData}
+                onSave={() => fetchData(page)}
             />
         </div>
     );

@@ -6,6 +6,10 @@ import com.devtrack.api.repository.BugRepository;
 import com.devtrack.api.repository.UserRepository;
 import com.devtrack.api.repository.WorkflowRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,17 +42,32 @@ public class BugController {
     private WorkflowRepository workflowRepository;
 
     @GetMapping
-    public List<Bug> getAllBugs() {
-        return bugRepository.findAllOptimized();
+    public Page<Bug> getAllBugs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "true") boolean showClosed) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        if (showClosed) {
+            return bugRepository.findAllOptimized(pageable);
+        } else {
+            return bugRepository.findAllOptimizedActive(pageable);
+        }
     }
 
     @GetMapping("/my")
-    public List<Bug> getMyBugs() {
+    public Page<Bug> getMyBugs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "true") boolean showClosed) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).orElseThrow();
-        return bugRepository.findAllOptimized().stream()
-                .filter(b -> (b.getAssignedDeveloper() != null && b.getAssignedDeveloper().getId().equals(user.getId())))
-                .toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        
+        if (showClosed) {
+            return bugRepository.findAllOptimizedByAssignedDeveloperId(user.getId(), pageable);
+        } else {
+            return bugRepository.findAllOptimizedByAssignedDeveloperIdAndActive(user.getId(), pageable);
+        }
     }
 
     @GetMapping("/{id}")

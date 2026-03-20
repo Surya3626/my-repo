@@ -4,6 +4,7 @@ import Logo from '../components/Logo';
 import apiClient from '../api/client';
 import authService from '../services/authService';
 import TaskModal from '../components/TaskModal';
+import Pagination from '../components/Pagination';
 import { useNotification } from '../context/NotificationContext';
 
 const Tasks = () => {
@@ -16,19 +17,41 @@ const Tasks = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     
+    // Pagination states
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const pageSize = 10;
+    
     const { showNotification } = useNotification();
     const currentUser = authService.getCurrentUser();
     const isDeveloper = currentUser?.roles?.includes('ROLE_DEVELOPER');
 
     useEffect(() => {
-        fetchTasks();
-    }, []);
+        fetchTasks(0);
+    }, [showClosed]);
 
-    const fetchTasks = async () => {
+    const fetchTasks = async (pageNumber = 0) => {
         setIsLoading(true);
         try {
-            const response = await apiClient.get(`/tasks/my`);
-            setTasks(response.data);
+            const response = await apiClient.get(`/tasks/my`, {
+                params: {
+                    page: pageNumber,
+                    size: pageSize,
+                    showClosed: showClosed
+                }
+            });
+            // Handle both Page object and legacy Array response
+            if (response.data.content) {
+                setTasks(response.data.content);
+                setTotalPages(response.data.totalPages);
+                setTotalElements(response.data.totalElements);
+                setPage(response.data.number);
+            } else {
+                setTasks(response.data);
+                setTotalPages(1);
+                setPage(0);
+            }
         } catch (error) {
             console.error('Error fetching tasks:', error);
             showNotification('Could not load your tasks. Our servers might be busy.', 'error');
@@ -42,6 +65,7 @@ const Tasks = () => {
                               task.jtrackId?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === '' || task.status === statusFilter;
         const matchesPriority = priorityFilter === '' || task.priority === priorityFilter;
+        // Backend already handles 'showClosed', but we keep matchesClosed for safety or local-only items
         const matchesClosed = showClosed || task.status !== 'CLOSED';
         return matchesSearch && matchesStatus && matchesPriority && matchesClosed;
     });
@@ -187,11 +211,18 @@ const Tasks = () => {
                 ))}
             </div>
 
+            <Pagination 
+                currentPage={page} 
+                totalPages={totalPages} 
+                onPageChange={fetchTasks} 
+                isLoading={isLoading} 
+            />
+
             <TaskModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 item={selectedTask}
-                onSave={fetchTasks}
+                onSave={() => fetchTasks(page)}
             />
         </div>
     );

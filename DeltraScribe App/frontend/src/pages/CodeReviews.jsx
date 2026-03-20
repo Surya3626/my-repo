@@ -39,12 +39,13 @@ const CodeReviews = () => {
         try {
             // Fetch both types of tasks to restore original review dashboard functionality
             const [tasksRes, bugTasksRes] = await Promise.all([
-                apiClient.get('/tasks'),
-                apiClient.get('/bugtasks')
+                apiClient.get('/tasks', { params: { size: 1000, showClosed: true } }),
+                apiClient.get('/bugtasks') // bugtasks endpoint might not be paginated yet, check if needed
             ]);
 
+            const tasksData = tasksRes.data.content || tasksRes.data;
             const allItems = [
-                ...tasksRes.data.map(t => ({ ...t, entityType: 'task' })),
+                ...tasksData.map(t => ({ ...t, entityType: 'task' })),
                 ...bugTasksRes.data.map(bt => ({ ...bt, entityType: 'bugTask' }))
             ];
 

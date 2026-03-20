@@ -46,13 +46,13 @@ const Dashboard = () => {
             try {
                 const [metricsRes, bugsRes, tasksRes] = await Promise.all([
                     apiClient.get('/reports/metrics'),
-                    apiClient.get('/bugs'),
-                    apiClient.get('/tasks')
+                    apiClient.get('/bugs', { params: { size: 50, showClosed: true } }),
+                    apiClient.get('/tasks', { params: { size: 50, showClosed: true } })
                 ]);
                 
                 let calculatedMetrics = metricsRes.data;
-                let displayedBugs = bugsRes.data;
-                let displayedTasks = tasksRes.data;
+                let displayedBugs = bugsRes.data.content || bugsRes.data;
+                let displayedTasks = tasksRes.data.content || tasksRes.data;
 
                 if (isDeveloper && !isDevAdmin) {
                     displayedTasks = tasksRes.data.filter(t => t.assignedDeveloper?.id === currentUser.id);

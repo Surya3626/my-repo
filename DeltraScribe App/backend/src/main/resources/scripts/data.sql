@@ -97,7 +97,24 @@ INSERT INTO tasks (id, jtrack_id, title, description, task_type_id, status, prio
 (9, 'DT-109', 'Task in UAT_COMPLETED', 'Testing the UAT_COMPLETED stage.', 4, 'UAT_COMPLETED', 'Low', 2, 1, 1, '2024-12-01', '2024-12-05', '2024-12-10', NULL, 5.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
 (10, 'DT-110', 'Task in PROD_DEPLOYED', 'Testing the PROD_DEPLOYED stage.', 1, 'PROD_DEPLOYED', 'High', 2, 1, 1, '2024-12-01', '2024-12-05', '2024-12-10', '2024-12-15', 5.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
 (11, 'DT-111', 'Task in PROD_COMPLETED', 'Testing the PROD_COMPLETED stage.', 2, 'PROD_COMPLETED', 'Medium', 2, 1, 1, '2024-12-01', '2024-12-05', '2024-12-10', '2024-12-15', 5.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
-(12, 'DT-112', 'Task in CLOSED', 'Testing the CLOSED stage.', 3, 'CLOSED', 'Low', 2, 1, 1, '2024-12-01', '2024-12-05', '2024-12-10', '2024-12-15', 5.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL);
+(12, 'DT-112', 'Task in CLOSED', 'Testing the CLOSED stage.', 3, 'CLOSED', 'Low', 2, 1, 1, '2024-12-01', '2024-12-05', '2024-12-10', '2024-12-15', 5.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(14, 'DT-114', 'Bulk Task 1', 'Pagination test data.', 1, 'OPEN', 'High', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(15, 'DT-115', 'Bulk Task 2', 'Pagination test data.', 1, 'IN_PROGRESS', 'Medium', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(16, 'DT-116', 'Bulk Task 3', 'Pagination test data.', 1, 'OPEN', 'Low', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(17, 'DT-117', 'Bulk Task 4', 'Pagination test data.', 2, 'OPEN', 'High', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(18, 'DT-118', 'Bulk Task 5', 'Pagination test data.', 2, 'IN_PROGRESS', 'Medium', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(19, 'DT-119', 'Bulk Task 6', 'Pagination test data.', 2, 'OPEN', 'Low', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(20, 'DT-120', 'Bulk Task 7', 'Pagination test data.', 3, 'OPEN', 'High', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(21, 'DT-121', 'Bulk Task 8', 'Pagination test data.', 3, 'IN_PROGRESS', 'Medium', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(22, 'DT-122', 'Bulk Task 9', 'Pagination test data.', 3, 'OPEN', 'Low', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(23, 'DT-123', 'Bulk Task 10', 'Pagination test data.', 4, 'OPEN', 'High', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(24, 'DT-124', 'Bulk Task 11', 'Pagination test data.', 4, 'IN_PROGRESS', 'Medium', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(25, 'DT-125', 'Bulk Task 12', 'Pagination test data.', 4, 'OPEN', 'Low', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(26, 'DT-126', 'Bulk Task 13', 'Pagination test data.', 1, 'OPEN', 'High', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(27, 'DT-127', 'Bulk Task 14', 'Pagination test data.', 1, 'IN_PROGRESS', 'Medium', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(28, 'DT-128', 'Bulk Task 15', 'Pagination test data.', 1, 'OPEN', 'Low', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(29, 'DT-129', 'Bulk Task 16', 'Pagination test data.', 1, 'CLOSED', 'High', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(30, 'DT-130', 'Bulk Task 17', 'Pagination test data.', 1, 'CLOSED', 'Medium', 2, 1, 1, NULL, NULL, NULL, NULL, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL);
 
 -- Bug Tasks (Tester created tasks)
 INSERT INTO bug_tasks (id, jtrack_id, title, description, task_type_id, status, priority, assigned_developer_id, created_by_id, workflow_id, efforts, created_date, updated_date) VALUES
@@ -112,14 +129,38 @@ INSERT INTO test_case_tasks (id, jtrack_id, title, description, status, priority
 INSERT INTO bugs (id, jtrack_id, bug_task_id, title, description, status, priority, severity, raised_by_id, assigned_developer_id, workflow_id, created_date, updated_date, is_in_pool, in_pool_date) VALUES
 (1, 'BUG-201', 1, 'Token expiration mismatch', 'JWT expires sooner than expected, causing logout.', 'OPEN', 'High', 'Critical', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
 (2, 'BUG-202', 2, 'Sidebar overlap on iPhone 13', 'Mobile view layout issues in Safari.', 'IN_PROGRESS', 'Medium', 'High', 4, 3, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
-(3, 'BUG-203', NULL, 'Validation Error on Signup', 'Email validation regex is too restrictive.', 'UAT_TESTING', 'Low', 'Medium', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL);
+(3, 'BUG-203', NULL, 'Validation Error on Signup', 'Email validation regex is too restrictive.', 'UAT_TESTING', 'Low', 'Medium', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(4, 'BUG-204', NULL, 'Bulk Bug 1', 'Pagination test data.', 'OPEN', 'High', 'Critical', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(5, 'BUG-205', NULL, 'Bulk Bug 2', 'Pagination test data.', 'IN_PROGRESS', 'Medium', 'High', 4, 3, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(6, 'BUG-206', NULL, 'Bulk Bug 3', 'Pagination test data.', 'OPEN', 'Low', 'Low', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(7, 'BUG-207', NULL, 'Bulk Bug 4', 'Pagination test data.', 'OPEN', 'High', 'Critical', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(8, 'BUG-208', NULL, 'Bulk Bug 5', 'Pagination test data.', 'IN_PROGRESS', 'Medium', 'High', 4, 3, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(9, 'BUG-209', NULL, 'Bulk Bug 6', 'Pagination test data.', 'OPEN', 'Low', 'Low', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(10, 'BUG-210', NULL, 'Bulk Bug 7', 'Pagination test data.', 'OPEN', 'High', 'Critical', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(11, 'BUG-211', NULL, 'Bulk Bug 8', 'Pagination test data.', 'IN_PROGRESS', 'Medium', 'High', 4, 3, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(12, 'BUG-212', NULL, 'Bulk Bug 9', 'Pagination test data.', 'OPEN', 'Low', 'Low', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(13, 'BUG-213', NULL, 'Bulk Bug 10', 'Pagination test data.', 'CLOSED', 'High', 'Critical', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(14, 'BUG-214', NULL, 'Bulk Bug 11', 'Pagination test data.', 'CLOSED', 'Medium', 'High', 4, 3, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL),
+(15, 'BUG-215', NULL, 'Bulk Bug 12', 'Pagination test data.', 'CLOSED', 'Low', 'Low', 4, 2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, NULL);
 
 -- Test Cases
 INSERT INTO test_cases (id, test_case_task_id, title, description, steps, expected_result, created_by_id, created_date) VALUES
 (1, 1, 'Valid Login Test', 'Verify successful login with correct creds', '1. Enter user\n2. Enter pass\n3. Click Login', 'Redirect to Dashboard', 4, CURRENT_TIMESTAMP),
 (2, 1, 'Expired Token Test', 'Verify access is denied with expired token', '1. Use old token\n2. Call API', '401 Unauthorized', 4, CURRENT_TIMESTAMP),
 (3, 1, 'Dashboard Widget Loading', 'Verify widgets load data from API correctly', '1. Open Dashboard\n2. Wait for loaders', 'All widgets show data', 4, CURRENT_TIMESTAMP),
-(4, 1, 'Rate Limit Test', 'Verify 429 error after 100 requests', '1. Execute loop\n2. Check status', '429 Too Many Requests', 4, CURRENT_TIMESTAMP);
+(4, 1, 'Rate Limit Test', 'Verify 429 error after 100 requests', '1. Execute loop\n2. Check status', '429 Too Many Requests', 4, CURRENT_TIMESTAMP),
+(5, 1, 'Bulk Test 1', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(6, 1, 'Bulk Test 2', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(7, 1, 'Bulk Test 3', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(8, 1, 'Bulk Test 4', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(9, 1, 'Bulk Test 5', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(10, 1, 'Bulk Test 6', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(11, 1, 'Bulk Test 7', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(12, 1, 'Bulk Test 8', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(13, 1, 'Bulk Test 9', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(14, 1, 'Bulk Test 10', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(15, 1, 'Bulk Test 11', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP),
+(16, 1, 'Bulk Test 12', 'Pagination test data.', 'Steps...', 'Expected...', 4, CURRENT_TIMESTAMP);
 
 -- Comments
 INSERT INTO comments (id, entity_type, entity_id, text, user_id, created_date) VALUES
@@ -218,11 +259,11 @@ ALTER TABLE users ALTER COLUMN id RESTART WITH 100;
 ALTER TABLE workflows ALTER COLUMN id RESTART WITH 100;
 ALTER TABLE task_types ALTER COLUMN id RESTART WITH 100;
 ALTER TABLE workflow_steps ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE tasks ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE bug_tasks ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE test_case_tasks ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE bugs ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE test_cases ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE comments ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE audit_logs ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE app_configs ALTER COLUMN id RESTART WITH 100;
+ALTER TABLE tasks ALTER COLUMN id RESTART WITH 200;
+ALTER TABLE bug_tasks ALTER COLUMN id RESTART WITH 200;
+ALTER TABLE test_case_tasks ALTER COLUMN id RESTART WITH 200;
+ALTER TABLE bugs ALTER COLUMN id RESTART WITH 200;
+ALTER TABLE test_cases ALTER COLUMN id RESTART WITH 200;
+ALTER TABLE comments ALTER COLUMN id RESTART WITH 200;
+ALTER TABLE audit_logs ALTER COLUMN id RESTART WITH 200;
+ALTER TABLE app_configs ALTER COLUMN id RESTART WITH 200;
