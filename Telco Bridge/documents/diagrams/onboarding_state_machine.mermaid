@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> STEP_1_FEASIBILITY
+    STEP_1_FEASIBILITY --> STEP_2_OTP_SENT : Address Feasible & Prospect Created
+    STEP_1_FEASIBILITY --> NRFS_State : Not Feasible
+    NRFS_State --> [*] : Terminated (Lead Stored)
+    STEP_2_OTP_SENT --> STEP_3_OTP_VALIDATED : Valid OTP Provided
+    STEP_3_OTP_VALIDATED --> STEP_4_DOCS_COLLECTED : Docs Uploaded & Validated
+    STEP_4_DOCS_COLLECTED --> STEP_5_PROFILE_BUILT : Profile Details & GST Validated
+    STEP_5_PROFILE_BUILT --> STEP_6_PLANS_OFFERS : Plans Fetched & Cached
+    STEP_6_PLANS_OFFERS --> STEP_7_PLAN_SELECTED : Plan Selected (Overridable)
+    STEP_7_PLAN_SELECTED --> STEP_8_AMOUNT_CALCULATED : Final Amount Calculated
+    STEP_8_AMOUNT_CALCULATED --> STEP_9_PAYMENT_LINK_GENERATED : HOBS & 6D Sync & Mapp Link Sent
+    STEP_9_PAYMENT_LINK_GENERATED --> STEP_10_DOCS_MIGRATED : Payment Successful (Webhook)
+    STEP_10_DOCS_MIGRATED --> STEP_11_CONSENT_RECEIVED : WhatsApp Interactive Consent
+    STEP_11_CONSENT_RECEIVED --> STEP_12_CAF_GENERATED : CAF PDF Generated
+    STEP_12_CAF_GENERATED --> STEP_13_EKYC_STARTED : HOBS Ticket Created
+    STEP_13_EKYC_STARTED --> [*] : Completed Onboarding

@@ -1,0 +1,32 @@
+sequenceDiagram
+    autonumber
+    actor Client as 3rd Party Client UI
+    participant MW as Middleware API
+    participant DB as Middleware Database
+    participant HOBS as HOBS ERP
+    participant SixD as 6D Billing Engine
+    participant Mapp as Mapp Link Generator
+    participant Notify as Notification Service (SMS/WA/Email)
+
+    Client->>MW: POST /api/v1/onboarding/{prospectId}/payment-link
+    MW->>HOBS: Synchronous Account Creation Request
+    HOBS-->>MW: Return Account ID & Success Acknowledgement
+    MW->>DB: Update State to HOBS_ACCOUNT_CREATED
+    MW-->>Client: HTTP 202 Accepted (Return Account ID, start async job)
+    
+    rect rgb(240, 248, 255)
+        note over MW, SixD: Asynchronous Billing Sync & Payment Link Gen
+        loop Check 6D Sync (3 retries with backoff)
+            MW->>SixD: GET /accounts/{accountId}/sync-status
+            SixD-->>MW: Synced / Pending
+        end
+        alt Sync Success
+            MW->>Mapp: POST /payment/link (Generate Link with Expiry)
+            Mapp-->>MW: Return Payment Link & Expiry Time
+            MW->>DB: Save Payment Link details, state = LINK_GENERATED
+            MW->>Notify: Trigger SMS, WhatsApp & Email with payment link
+        else Sync Fails after Retries
+            MW->>DB: Update state = SYNC_FAILED
+            MW->>Notify: Send SMS/Email alert to retry step 9
+        end
+    end

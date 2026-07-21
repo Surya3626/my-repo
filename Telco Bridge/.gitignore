@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+target/
+dist/
+build/
+*.jar
+*.war
+
+# Database files
+*.mv.db
+*.trace.db
+
+# Zip / temporary archives
+documents.zip
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# IDE & System files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

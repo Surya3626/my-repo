@@ -1,0 +1,28 @@
+sequenceDiagram
+    autonumber
+    actor Client as 3rd Party Client UI
+    participant MW as Middleware API
+    participant DB as Middleware Database
+    participant SMS as SMS/Email Dispatch
+
+    Client->>MW: POST /api/v1/onboarding/otp/send (ProspectID)
+    MW->>DB: Verify Lead exists & Address Feasible
+    MW->>DB: Generate OTP hash, expiry & save
+    MW->>SMS: Dispatch OTP
+    MW-->>Client: OTP Dispatched Successfully
+
+    Client->>MW: POST /api/v1/onboarding/otp/validate (OTP, ProspectID)
+    MW->>DB: Retrieve OTP & compare hashes, verify expiry
+    alt OTP Invalid/Expired
+        MW-->>Client: Error (Invalid/Expired OTP)
+    else OTP Valid
+        MW->>DB: Check onboarding_master for current_step
+        alt Existing Prospect (Stopped in middle)
+            DB-->>MW: Return step (e.g. STEP_7_PLAN_SELECTED) & saved state
+            MW-->>Client: Success (Status: RESUME, RedirectTo: Step 8, Data: PlanInfo)
+        else New Prospect
+            DB-->>MW: No previous steps completed
+            MW->>DB: Update step to STEP_3_OTP_VALIDATED
+            MW-->>Client: Success (Status: NEW, RedirectTo: Step 4)
+        end
+    end

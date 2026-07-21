@@ -1,0 +1,75 @@
+I have to implement a middle ware backend for online self onbarding portal for tataplayfiber with below functionalities:
+
+**General Instructions : **
+1. My middleware will be used by any 3rd party front applications for customer on boarding
+2. customers entire flow throuthout the onbarding process will be tracked usig tables. If customer stopped the process in the middle and comes back then we need to move the customer to the step where he stopped for better customer satisfaction
+3. At every step we need to store details in tracking tables. I suggest we will maintain different tables step wise
+4. Also a common table will be there where we will track customers transition and current stage so that we dont need to go thrugh every table everytime he login.
+
+**Step 1 : Capture customer personal details like rmn, name, email, full address and call gis check feasibility API**
+		-> If address feasible -> create a prospect id & send success response & store customer lead details alsong with build type details recieved from GIS api & prospect id in a table
+		-> If not feasible -> send error response & store customer lead details and set address status as NRFS
+		-> These lead details can be used by client so that they can follow up customer if address feasible in future
+		-> Prospect Id will be uniqe for every lead
+
+**Step 2 : After successful feasibility check, send otp to customer for verification based on rmn/email id after customer verification by checking if customer presnet in our leads and generate OTP**
+
+**Step 3 : Validate customer otp**
+		-> take otp & validate the OTP and check if customer is new / stopped the process in middle
+			-> if new send the response with some unique details so that my caller can know that we need to redirect him to 1st page only
+
+			-> if stopped somewhere then send response accordingly so that they rediect the customer to the page where he stopped
+**Step 4 : Document collection **
+		-> take documents like POI, POA, customer live photo in the request & store them in azure against the prospect id
+		-> Create Declaration form from the documents & store it in same folder against prospect id
+		-> validate these documents by calling TRUST APIs
+		  -> If validation success then send success response else send error response and restrict the customer to move to next step
+
+**Step 5 : Profile building**
+		-> take all customer details, GST details
+		-> validate GST details and send response based on validation
+
+**Step 6 : Plans & Offers**
+		-> fetch all available packages based on city from getPackages API and cache them somewhere
+		-> fetch offers like coupons or any discount from magix API 
+		-> consolidate them and send them in response
+
+**Step 7 : Plan selection**
+		-> once customer selects the plan, take it in request and also offers if any and store them in table based on prospect id
+		-> these details can be overridden where if customer wants to change the plan then we need to override this details
+	
+**Step 8 : Calculate amount:**
+		-> calculate final total amount based on the plan seletcd by customer and offers 
+		-> send these details in response
+
+**Step 9 : Generate payment link**
+		-> create customer, account in HOBS & send a acknowledgement to caller
+		-> now asyncrhonously check if account is created at 6D end and if created call mapp API to generate payment link
+		-> if not created, resrict the custmer to move to next and he will retry this step again
+		-> Also customer can regenerate the link and we should validate below things:
+			-> check if account created or not, if not created retry account creation and generate link else do as below
+				-> if link is not expired -> send the same link to customer
+				-> if link is expired generate a new link and send it to customer
+				-> link expiry and link details will be stored in our tables only
+		-> send communications on whstapp, email, sms about the link details		
+		
+**Step 10 : Document migration**
+		-> migrate all the doucuments uploaded by customer from prospect id folder to customerid folder
+
+**Step 11 : customer consent**
+		-> customer two step verification where wwe will send a whatapp message to customer and he will give consent on whstapp itself
+	
+**Step 12 : CAF generation**
+		-> generate a CAD documents in PDF format and store it in the customerid foolder
+		
+**Step 13 : EKYC process start**
+		-> create a ticket in HOBS for ekyc
+
+
+->A status tracking API will be there where we will give details of customer status
+-> Security will be implemented for the APIs
+
+		
+->This is my requirement and i need a solution design document to present it to my client alsong with flow diagrams and all
+-> This applictaion will be in springboot and it is a pure backend application where it is a common place and any 3rd party aplication can integrate with it for customer onbarding
+-> You can suggrest the changes whichever you are thinkg will add more control to this application
