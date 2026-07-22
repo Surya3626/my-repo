@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/common/Toast';
 import api from '../utils/api';
 import { 
   User, FileText, Settings, Compass, Phone, Star, Gauge, MapPin,
@@ -16,6 +17,7 @@ import { InvoiceDrawer } from '../components/features/InvoiceDrawer';
 import { RechargeModal } from '../components/features/RechargeModal';
 
 export const SelfCarePortal: React.FC = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const locationState = useLocation().state as { openTracking?: boolean } | null;
   const { customer, login, logout, token } = useAuth();
@@ -102,7 +104,7 @@ export const SelfCarePortal: React.FC = () => {
         }
       }
     } catch (err) {
-      // Handled by axios interceptor
+      // Handled globally
     } finally {
       setLoading(false);
     }
@@ -123,8 +125,11 @@ export const SelfCarePortal: React.FC = () => {
     try {
       await api.post('/auth/otp/send', { mobileNumber });
       setOtpSent(true);
+      toast.success("OTP Dispatched", `A 6-digit login code has been sent to ${mobileNumber}`);
     } catch (err: any) {
-      setAuthError(err.response?.data?.message || "Error dispatching OTP.");
+      const msg = err.response?.data?.message || "Error dispatching OTP.";
+      setAuthError(msg);
+      toast.error("OTP Error", msg);
     }
   };
 
@@ -135,9 +140,12 @@ export const SelfCarePortal: React.FC = () => {
       const res = await api.post('/auth/otp/verify', { mobileNumber, otp: otpCode });
       if (res.data?.success) {
         login(res.data.data.token, res.data.data.customer);
+        toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
       }
     } catch (err: any) {
-      setAuthError(err.response?.data?.message || "Invalid OTP code.");
+      const msg = err.response?.data?.message || "Invalid OTP code.";
+      setAuthError(msg);
+      toast.error("Login Failed", msg);
     }
   };
 
@@ -149,11 +157,16 @@ export const SelfCarePortal: React.FC = () => {
       if (res.data?.success) {
         setRelocateSuccess(true);
         setRelocationAddress('');
+        toast.success("Relocation Submitted", "Our field engineering team will process your shift request within 24 hours.");
       } else {
-        setRelocateError(res.data?.message || "Relocation request failed.");
+        const msg = res.data?.message || "Relocation request failed.";
+        setRelocateError(msg);
+        toast.error("Request Error", msg);
       }
     } catch (err: any) {
-      setRelocateError(err.response?.data?.message || "Address relocation error.");
+      const msg = err.response?.data?.message || "Address relocation error.";
+      setRelocateError(msg);
+      toast.error("Request Error", msg);
     }
   };
 
@@ -165,11 +178,16 @@ export const SelfCarePortal: React.FC = () => {
       if (res.data?.success) {
         setHoldSuccess(true);
         loadDashboard();
+        toast.success("Vacation Hold Activated", `Account paused for ${holdDays} days without extra billing.`);
       } else {
-        setHoldError(res.data?.message || "Hold request failed.");
+        const msg = res.data?.message || "Hold request failed.";
+        setHoldError(msg);
+        toast.error("Hold Error", msg);
       }
     } catch (err: any) {
-      setHoldError(err.response?.data?.message || "Validation failed on server.");
+      const msg = err.response?.data?.message || "Validation failed on server.";
+      setHoldError(msg);
+      toast.error("Hold Error", msg);
     }
   };
 
@@ -183,14 +201,20 @@ export const SelfCarePortal: React.FC = () => {
         description: ticketDescription
       });
       if (res.data?.success) {
-        setTicketSuccess(`Support Ticket #${res.data.data?.ticketNumber || ''} created successfully.`);
+        const tNum = res.data.data?.ticketNumber || '';
+        setTicketSuccess(`Support Ticket #${tNum} created successfully.`);
         setTicketDescription('');
         loadDashboard();
+        toast.success("Ticket Generated", `Support Ticket #${tNum} has been assigned to priority dispatch.`);
       } else {
-        setTicketError(res.data?.message || "Could not create ticket.");
+        const msg = res.data?.message || "Could not create ticket.";
+        setTicketError(msg);
+        toast.error("Ticket Creation Failed", msg);
       }
     } catch (err: any) {
-      setTicketError(err.response?.data?.message || "Server validation error creating ticket.");
+      const msg = err.response?.data?.message || "Server validation error creating ticket.";
+      setTicketError(msg);
+      toast.error("Ticket Creation Failed", msg);
     }
   };
 
@@ -198,11 +222,13 @@ export const SelfCarePortal: React.FC = () => {
     try {
       const res = await api.post('/customer/portal/plan/change', { planId });
       if (res.data?.success) {
-        alert(`Plan upgraded successfully to ${res.data.data?.plan?.name}!`);
+        const planName = res.data.data?.plan?.name || 'Selected Plan';
+        toast.success("Plan Upgraded!", `Your broadband plan has been successfully switched to ${planName}.`);
         loadDashboard();
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || "Plan change failed.");
+      const msg = err.response?.data?.message || "Plan change failed.";
+      toast.error("Upgrade Failed", msg);
     }
   };
 
@@ -211,8 +237,11 @@ export const SelfCarePortal: React.FC = () => {
     try {
       await api.post('/customer/portal/feedback', { rating, comments });
       setFeedbackSuccess(true);
+      toast.success("Thank You!", "Your feedback has been submitted to customer experience team.");
       loadDashboard();
-    } catch (err) {}
+    } catch (err: any) {
+      toast.error("Submission Error", "Failed to submit feedback.");
+    }
   };
 
   const openInvoice = (paymentItem: any) => {
@@ -234,17 +263,11 @@ export const SelfCarePortal: React.FC = () => {
   if (!token || !customer) {
     return (
       <div className="max-w-md mx-auto px-4 py-16 space-y-6">
-        <div className="glass-panel border rounded-3xl p-8 shadow-lg text-center space-y-6">
+        <div className="clay-modal p-8 text-center space-y-6">
           <div className="space-y-2">
             <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white">Customer Self Care</h2>
             <p className="text-xs text-slate-400">Login with your registered mobile number using OTP</p>
           </div>
-
-          {authError && (
-            <div className="p-3 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 text-xs font-semibold">
-              {authError}
-            </div>
-          )}
 
           {!otpSent ? (
             <form onSubmit={handleSendOtp} className="space-y-4 text-left">

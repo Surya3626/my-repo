@@ -1,4 +1,5 @@
-$env:JAVA_HOME = "D:\JAVA25"
-$env:PATH = "D:\JAVA25\bin;D:\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin;D:\;" + $env:PATH
+$env:JAVA_HOME = "H:\JAVA\openjdk-24.0.2\jdk-24.0.2"
+$env:PATH = "$env:JAVA_HOME\bin;H:\MAVEN\apache-maven-3.9.10\bin;" + $env:PATH
 Set-Location -Path "$PSScriptRoot\backend"
-& "D:\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin\mvn.cmd" spring-boot:run
+mvn spring-boot:run
+

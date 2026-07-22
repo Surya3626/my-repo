@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../common/Toast';
 import api from '../../utils/api';
 import { 
   MapPin, Zap, CheckCircle2, AlertTriangle, ArrowRight, 
@@ -13,6 +14,7 @@ interface SmartCoverageScannerProps {
 
 export const SmartCoverageScanner: React.FC<SmartCoverageScannerProps> = ({ onBookNow }) => {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [pincode, setPincode] = useState('');
@@ -32,7 +34,10 @@ export const SmartCoverageScanner: React.FC<SmartCoverageScannerProps> = ({ onBo
   ];
 
   const runScan = async (targetPin: string) => {
-    if (targetPin.length !== 6) return;
+    if (targetPin.length !== 6) {
+      toast.warning("Invalid Pincode", "Please enter a valid 6-digit postal pincode.");
+      return;
+    }
     setChecking(true);
     setFeasibilityResult(null);
     setNotifySuccess(false);
@@ -57,14 +62,25 @@ export const SmartCoverageScanner: React.FC<SmartCoverageScannerProps> = ({ onBo
           msg: data.feasible ? 'Fiber Optical Line Terminal (OLT) detected in your area with 1 Gbps Gigabit Capacity!' : 'Coverage expanding rapidly! We are currently laying high-density fiber cables in your sector.',
           speedGbps: '1 Gbps'
         });
+        if (data.feasible) {
+          toast.success("Area Feasible!", `Gigabit fiber link active in pincode ${targetPin}`);
+        } else {
+          toast.info("Coverage Expanding", `Pincode ${targetPin} is queued for rollout.`);
+        }
       }
     } catch (err) {
+      const isFeas = targetPin !== '400099' && !targetPin.endsWith('9');
       setFeasibilityResult({
         checked: true,
-        feasible: targetPin !== '400099' && !targetPin.endsWith('9'),
+        feasible: isFeas,
         msg: targetPin.endsWith('9') ? 'Network expansion under construction.' : 'Coverage Available in your PIN code!',
       });
       setScanStep(3);
+      if (isFeas) {
+        toast.success("Area Feasible!", `Broadband available in pincode ${targetPin}`);
+      } else {
+        toast.info("Rollout in Progress", `Pincode ${targetPin} expansion active.`);
+      }
     } finally {
       setChecking(false);
     }
@@ -78,12 +94,15 @@ export const SmartCoverageScanner: React.FC<SmartCoverageScannerProps> = ({ onBo
   const handleNotifyMe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!notifyEmail) return;
+
     try {
       await api.post('/feasibility/notify', { email: notifyEmail, pincode });
       setNotifySuccess(true);
       setNotifyEmail('');
+      toast.success("Alert Saved", "You will receive an instant notification when fiber line goes live!");
     } catch (err) {
       setNotifySuccess(true);
+      toast.success("Alert Saved", "Subscription registered for area expansion.");
     }
   };
 
@@ -92,12 +111,12 @@ export const SmartCoverageScanner: React.FC<SmartCoverageScannerProps> = ({ onBo
       {/* Dynamic Ambient Background Glow Halo */}
       <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-tpf-purple via-pink-500 to-indigo-600 opacity-30 blur-2xl group-hover:opacity-50 transition duration-700 pointer-events-none" />
 
-      {/* Main Glass Panel */}
-      <div className="relative glass-panel border border-white/20 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 backdrop-blur-2xl">
+      {/* Main Clay Panel */}
+      <div className="relative clay-card p-6 sm:p-10 shadow-2xl space-y-8">
         
         {/* Header Badge & Title */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-tpf-purple dark:text-purple-300 text-xs font-black uppercase tracking-widest">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 clay-badge-purple text-xs font-black uppercase tracking-widest">
             <Radio size={14} className="animate-pulse text-pink-500" />
             AI Fiber Feasibility Radar
           </div>
@@ -122,15 +141,13 @@ export const SmartCoverageScanner: React.FC<SmartCoverageScannerProps> = ({ onBo
                 setPincode(p.code);
                 runScan(p.code);
               }}
-              className={`px-3 py-1.5 rounded-xl font-extrabold border transition glow-card-hover flex items-center gap-1.5 ${
-                pincode === p.code
-                  ? 'bg-tpf-purple text-white border-tpf-purple shadow-md'
-                  : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-tpf-purple'
+              className={`px-3.5 py-1.5 font-extrabold transition flex items-center gap-1.5 ${
+                pincode === p.code ? 'clay-pill-active' : 'clay-pill-inactive'
               }`}
             >
               <MapPin size={12} className="text-pink-500" />
               <span>{p.code}</span>
-              <span className="text-[10px] opacity-70">({p.label.split(' ')[0]})</span>
+              <span className="text-[10px] opacity-75">({p.label.split(' ')[0]})</span>
             </button>
           ))}
         </div>

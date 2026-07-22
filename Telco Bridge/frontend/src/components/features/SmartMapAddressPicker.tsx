@@ -24,6 +24,7 @@ interface SmartMapAddressPickerProps {
   initialAddress?: Partial<AddressData>;
   onChange: (data: AddressData) => void;
   onDetectGps?: () => void;
+  hideFormFields?: boolean;
 }
 
 declare global {
@@ -36,6 +37,7 @@ export const SmartMapAddressPicker: React.FC<SmartMapAddressPickerProps> = ({
   initialAddress,
   onChange,
   onDetectGps,
+  hideFormFields = false,
 }) => {
   // Preferred Entry Mode: MAP (Real Leaflet Map), SEARCH (Smart Search), MANUAL (Form Input)
   const [preferredMode, setPreferredMode] = useState<'MAP' | 'SEARCH' | 'MANUAL'>('MAP');
@@ -606,114 +608,116 @@ export const SmartMapAddressPicker: React.FC<SmartMapAddressPickerProps> = ({
       )}
 
       {/* DETAILED MANUAL ADDRESS FORM FIELDS - High Visibility */}
-      <div className="space-y-4 pt-2">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-          <span className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wide">
-            <CheckCircle2 size={14} className="text-emerald-500" /> Building & Address Details Summary
-          </span>
-          <span className="text-[10px] text-purple-700 dark:text-purple-300 font-bold">Auto-Populated from Map / Search</span>
+      {!hideFormFields && (
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+            <span className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wide">
+              <CheckCircle2 size={14} className="text-emerald-500" /> Building & Address Details Summary
+            </span>
+            <span className="text-[10px] text-purple-700 dark:text-purple-300 font-bold">Auto-Populated from Map / Search</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Flat / House Number *</label>
+              <input
+                type="text"
+                required
+                value={houseNumber}
+                onChange={e => setHouseNumber(e.target.value)}
+                placeholder="e.g. Flat 402, Block B"
+                className="border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple focus:border-tpf-purple font-semibold shadow-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Society / Building Name *</label>
+              <input
+                type="text"
+                required
+                value={society}
+                onChange={e => setSociety(e.target.value)}
+                placeholder="e.g. Crest Towers"
+                className="border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple focus:border-tpf-purple font-semibold shadow-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Address Line 1 *</label>
+              <input
+                type="text"
+                required
+                value={addressLine1}
+                onChange={e => setAddressLine1(e.target.value)}
+                placeholder="e.g. Street Name, Area / Locality"
+                className="border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple focus:border-tpf-purple font-semibold shadow-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Street Name</label>
+              <input
+                type="text"
+                required
+                value={street}
+                onChange={e => setStreet(e.target.value)}
+                placeholder="e.g. Main Avenue Road"
+                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple font-semibold shadow-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Area / Locality</label>
+              <input
+                type="text"
+                required
+                value={area}
+                onChange={e => setArea(e.target.value)}
+                placeholder="e.g. Bandra West"
+                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple font-semibold shadow-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">City</label>
+              <input
+                type="text"
+                required
+                value={city}
+                onChange={e => setCity(e.target.value)}
+                placeholder="e.g. Mumbai"
+                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple font-semibold shadow-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">State</label>
+              <input
+                type="text"
+                required
+                value={state}
+                onChange={e => setState(e.target.value)}
+                placeholder="e.g. Maharashtra"
+                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple font-semibold shadow-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">6-digit PIN Code *</label>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                pattern="\d{6}"
+                value={pincode}
+                onChange={e => setPincode(e.target.value.replace(/\D/g, ''))}
+                placeholder="e.g. 400050"
+                className="border-2 border-purple-500/40 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white font-black tracking-wider text-sm focus:outline-none focus:ring-2 focus:ring-tpf-purple shadow-sm"
+              />
+            </div>
+          </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Flat / House Number *</label>
-            <input
-              type="text"
-              required
-              value={houseNumber}
-              onChange={e => setHouseNumber(e.target.value)}
-              placeholder="e.g. Flat 402, Block B"
-              className="border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple focus:border-tpf-purple font-semibold shadow-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Society / Building Name *</label>
-            <input
-              type="text"
-              required
-              value={society}
-              onChange={e => setSociety(e.target.value)}
-              placeholder="e.g. Crest Towers"
-              className="border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple focus:border-tpf-purple font-semibold shadow-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Address Line 1 *</label>
-            <input
-              type="text"
-              required
-              value={addressLine1}
-              onChange={e => setAddressLine1(e.target.value)}
-              placeholder="e.g. Street Name, Area / Locality"
-              className="border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple focus:border-tpf-purple font-semibold shadow-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Street Name</label>
-            <input
-              type="text"
-              required
-              value={street}
-              onChange={e => setStreet(e.target.value)}
-              placeholder="e.g. Main Avenue Road"
-              className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple font-semibold shadow-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">Area / Locality</label>
-            <input
-              type="text"
-              required
-              value={area}
-              onChange={e => setArea(e.target.value)}
-              placeholder="e.g. Bandra West"
-              className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple font-semibold shadow-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">City</label>
-            <input
-              type="text"
-              required
-              value={city}
-              onChange={e => setCity(e.target.value)}
-              placeholder="e.g. Mumbai"
-              className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple font-semibold shadow-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">State</label>
-            <input
-              type="text"
-              required
-              value={state}
-              onChange={e => setState(e.target.value)}
-              placeholder="e.g. Maharashtra"
-              className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple font-semibold shadow-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase">6-digit PIN Code *</label>
-            <input
-              type="text"
-              required
-              maxLength={6}
-              pattern="\d{6}"
-              value={pincode}
-              onChange={e => setPincode(e.target.value.replace(/\D/g, ''))}
-              placeholder="e.g. 400050"
-              className="border-2 border-purple-500/40 bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white font-black tracking-wider text-sm focus:outline-none focus:ring-2 focus:ring-tpf-purple shadow-sm"
-            />
-          </div>
-        </div>
-      </div>
+      )}
 
     </div>
   );

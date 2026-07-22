@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, Building2, CheckCircle2, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import api from '../../utils/api';
+import { useToast } from '../common/Toast';
 
 interface RechargeModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
   currentPlan,
   onSuccess
 }) => {
+  const { toast } = useToast();
   const [tenure, setTenure] = useState<number>(1); // 1, 3, 6, 12 months
   const [paymentMode, setPaymentMode] = useState<'UPI' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'NET_BANKING'>('UPI');
   const [upiId, setUpiId] = useState('');
@@ -49,12 +51,17 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
 
       if (res.data?.success) {
         setSuccessResult(res.data.data);
+        toast.success("Recharge Successful!", `Account renewed for ${tenure} month(s). Txn ID: ${res.data.data?.transactionId || ''}`);
         onSuccess();
       } else {
-        setError(res.data?.message || 'Recharge failed. Please try again.');
+        const msg = res.data?.message || 'Recharge failed. Please try again.';
+        setError(msg);
+        toast.error("Recharge Failed", msg);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Transaction failed. Please check payment details.');
+      const msg = err.response?.data?.message || 'Transaction failed. Please check payment details.';
+      setError(msg);
+      toast.error("Payment Failed", msg);
     } finally {
       setLoading(false);
     }
@@ -62,7 +69,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-3xl max-w-xl w-full p-8 shadow-2xl space-y-6 relative text-left">
+      <div className="clay-modal max-w-xl w-full p-8 space-y-6 relative text-left">
         
         {/* Close Button */}
         <button
@@ -77,19 +84,13 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             {/* Header */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-tpf-purple flex items-center justify-center font-bold">
-                  <Zap size={18} />
+                <div className="w-10 h-10 clay-badge-purple flex items-center justify-center font-bold text-tpf-purple">
+                  <Zap size={20} />
                 </div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">Quick Account Recharge</h3>
               </div>
               <p className="text-xs text-slate-400">Instantly renew or extend your TelcoBridge high-speed connection.</p>
             </div>
-
-            {error && (
-              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 text-xs font-bold text-rose-600 dark:text-rose-400">
-                {error}
-              </div>
-            )}
 
             <form onSubmit={handleRechargeSubmit} className="space-y-6">
               

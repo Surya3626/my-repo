@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { useToast } from '../components/common/Toast';
 import { 
   Users, Layers, Landmark, BarChart3, ShieldCheck, FileCheck, 
   RefreshCw, ClipboardList, Check, X, CheckSquare, Search, UserPlus, PlayCircle, Eye,
@@ -10,6 +11,7 @@ import { JourneyTimeline } from '../components/features/JourneyTimeline';
 import { NotificationSimulator } from '../components/features/NotificationSimulator';
 
 export const AdminPortal: React.FC = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -92,9 +94,12 @@ export const AdminPortal: React.FC = () => {
       if (res.data?.success) {
         localStorage.setItem('tpf_admin_token', res.data.data.token);
         setIsAdminLoggedIn(true);
+        toast.success("Admin Authenticated", "Administrative control panel unlocked.");
       }
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || "Invalid Admin credentials.");
+      const msg = err.response?.data?.message || "Invalid Admin credentials.";
+      setErrorMessage(msg);
+      toast.error("Authentication Error", msg);
     } finally {
       setLoading(false);
     }
@@ -103,24 +108,29 @@ export const AdminPortal: React.FC = () => {
   const handleAdminLogout = () => {
     localStorage.removeItem('tpf_admin_token');
     setIsAdminLoggedIn(false);
+    toast.info("Logged Out", "Admin session ended.");
   };
 
   const handleKycApproval = async (docId: number, approved: boolean) => {
     try {
       const res = await api.post(`/admin/kyc/verify?documentId=${docId}&approved=${approved}`);
       if (res.data?.success) {
-        alert(approved ? "KYC Document Approved!" : "KYC Document Rejected.");
+        if (approved) {
+          toast.success("KYC Approved", "Customer document validated successfully.");
+        } else {
+          toast.warning("KYC Rejected", "Document marked as rejected.");
+        }
         loadAllAdminData();
       }
-    } catch (err) {
-      alert("Action failed");
+    } catch (err: any) {
+      toast.error("Action Failed", "Could not complete KYC verification.");
     }
   };
 
   const handleInitiateOnboarding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!initMobile || initMobile.length !== 10) {
-      alert("Please enter a valid 10-digit mobile number.");
+      toast.warning("Invalid Mobile", "Please enter a valid 10-digit mobile number.");
       return;
     }
     setInitLoading(true);
@@ -130,13 +140,12 @@ export const AdminPortal: React.FC = () => {
         firstName: initFirstName || 'Prospect',
         lastName: initLastName || 'Customer',
         email: initEmail || `${initMobile}@telcobridge.com`,
-
         adminId: adminUsername || 'admin'
       });
 
       if (res.data?.success) {
         setShowInitiateModal(false);
-        // Navigate to dedicated Admin Onboarding Wizard page
+        toast.success("Onboarding Initiated", `Assisted flow launched for ${initMobile}`);
         navigate('/admin/onboard', {
           state: {
             adminId: adminUsername || 'admin',
@@ -151,13 +160,14 @@ export const AdminPortal: React.FC = () => {
         });
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to initiate onboarding.");
+      toast.error("Initiation Failed", err.response?.data?.message || "Failed to initiate onboarding.");
     } finally {
       setInitLoading(false);
     }
   };
 
   const handleResumeCustomerOnboarding = (cust: any) => {
+    toast.info("Resuming Onboarding", `Loading draft for ${cust.mobileNumber}`);
     navigate('/admin/onboard', {
       state: {
         adminId: adminUsername || 'admin',
@@ -221,20 +231,14 @@ export const AdminPortal: React.FC = () => {
 
   if (!isAdminLoggedIn) {
     return (
-      <div className="max-w-md mx-auto my-12 p-8 border dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-2xl space-y-6 text-left animate-fade-in">
+      <div className="max-w-md mx-auto my-16 p-8 clay-modal text-left space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-purple-50 dark:bg-purple-950/30 rounded-2xl flex items-center justify-center mx-auto text-tpf-purple border border-purple-100 dark:border-purple-800/40">
-            <ShieldCheck size={28} />
+          <div className="w-14 h-14 clay-badge-purple rounded-2xl flex items-center justify-center mx-auto text-tpf-purple">
+            <ShieldCheck size={32} />
           </div>
           <h2 className="text-xl font-black text-slate-850 dark:text-white">Admin Secure Gateway</h2>
           <p className="text-xs text-slate-400 font-medium">Please enter credentials to access administrative dashboard</p>
         </div>
-
-        {errorMessage && (
-          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 border border-rose-200 dark:border-rose-800/35 text-xs font-bold animate-shake">
-            {errorMessage}
-          </div>
-        )}
 
         <form onSubmit={handleAdminLogin} className="space-y-4">
           <div className="flex flex-col gap-1.5">
@@ -245,7 +249,7 @@ export const AdminPortal: React.FC = () => {
               value={adminUsername}
               onChange={e => setAdminUsername(e.target.value)}
               placeholder="e.g. admin"
-              className="w-full border dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple"
+              className="w-full clay-input px-4 py-2.5 text-xs dark:text-white"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -256,14 +260,14 @@ export const AdminPortal: React.FC = () => {
               value={adminPassword}
               onChange={e => setAdminPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full border dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple"
+              className="w-full clay-input px-4 py-2.5 text-xs dark:text-white"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-sm text-white gradient-bg hover:opacity-95 shadow-md flex items-center justify-center gap-1.5 mt-2"
+            className="w-full py-3.5 clay-button-purple font-bold text-sm flex items-center justify-center gap-1.5 mt-2 shadow-md"
           >
             Authenticate Admin
           </button>

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { PenLine, CheckCircle, X, RotateCcw } from 'lucide-react';
+import { useToast } from '../common/Toast';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ export const DigitalSignature: React.FC<DigitalSignatureProps> = ({
   readonly = false,
   existingSignature,
 }) => {
+  const { toast } = useToast();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isSigned, setIsSigned] = useState(!!existingSignature);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -82,6 +84,7 @@ export const DigitalSignature: React.FC<DigitalSignatureProps> = ({
     setHasStrokes(false);
     setIsSigned(false);
     setSignatureUrl(null);
+    toast.info("Signature Cleared", "Drawing pad reset.");
   };
 
   const confirmSignature = () => {
@@ -91,6 +94,7 @@ export const DigitalSignature: React.FC<DigitalSignatureProps> = ({
     setSignatureUrl(dataUrl);
     setIsSigned(true);
     onSign?.(dataUrl);
+    toast.success("Signature Saved", "Digital signature attached to Customer Application Form.");
   };
 
   return (
@@ -149,7 +153,7 @@ export const DigitalSignature: React.FC<DigitalSignatureProps> = ({
             type="button"
             onClick={clearSignature}
             disabled={!hasStrokes}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-bold border dark:border-slate-700 text-slate-500 dark:text-slate-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition"
+            className="flex items-center gap-1 px-3 py-2 text-xs font-bold clay-button-slate disabled:opacity-30"
           >
             <RotateCcw size={12} /> Clear
           </button>
@@ -157,7 +161,7 @@ export const DigitalSignature: React.FC<DigitalSignatureProps> = ({
             type="button"
             onClick={confirmSignature}
             disabled={!hasStrokes}
-            className="flex-1 flex items-center justify-center gap-1 px-4 py-2 bg-tpf-purple text-white text-xs font-extrabold rounded-xl shadow hover:opacity-90 disabled:opacity-30 transition"
+            className="flex-1 flex items-center justify-center gap-1 px-4 py-2 clay-button-purple text-xs font-extrabold shadow disabled:opacity-30"
           >
             <CheckCircle size={12} /> Confirm Signature
           </button>
@@ -168,7 +172,7 @@ export const DigitalSignature: React.FC<DigitalSignatureProps> = ({
         <button
           type="button"
           onClick={clearSignature}
-          className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-rose-500 border border-rose-400/30 rounded-xl hover:bg-rose-500/5 transition"
+          className="flex items-center gap-1 px-3 py-2 text-xs font-bold clay-button-rose"
         >
           <X size={12} /> Remove & Re-sign
         </button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../components/common/Toast';
 import api from '../utils/api';
 import { CheckCircle2, AlertTriangle, ArrowRight, ShieldCheck, Zap, Activity, HelpCircle, UserCheck, X, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +22,7 @@ interface BroadbandPlan {
 
 export const LandingPage: React.FC = () => {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [pincode, setPincode] = useState('');
   const [checking, setChecking] = useState(false);
@@ -43,7 +45,10 @@ export const LandingPage: React.FC = () => {
 
   const handleCheckFeasibility = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pincode.trim().length !== 6) return;
+    if (pincode.trim().length !== 6) {
+      toast.warning("Invalid Pincode", "Please enter a valid 6-digit postal pincode.");
+      return;
+    }
 
     setChecking(true);
     setFeasibilityResult(null);
@@ -59,14 +64,21 @@ export const LandingPage: React.FC = () => {
           msg: data.feasible ? t('pinFeasible') : t('pinNotFeasible')
         });
         setShowFeasibilityModal(true);
+        if (data.feasible) {
+          toast.success("Area Feasible!", `Gigabit connection is active in pincode ${pincode}`);
+        } else {
+          toast.info("Coverage Expanding", `Pincode ${pincode} is queued for network rollout.`);
+        }
       }
     } catch (err: any) {
+      const errMsg = err.response?.data?.message || "Error validating feasibility.";
       setFeasibilityResult({
         checked: true,
         feasible: false,
-        msg: err.response?.data?.message || "Error validating feasibility."
+        msg: errMsg
       });
       setShowFeasibilityModal(true);
+      toast.error("Feasibility Check Failed", errMsg);
     } finally {
       setChecking(false);
     }
@@ -80,8 +92,10 @@ export const LandingPage: React.FC = () => {
       await api.post(`/feasibility/expansion?email=${notifyEmail}&pincode=${pincode}`);
       setNotifySuccess(true);
       setNotifyEmail('');
-    } catch (err) {
-      alert("Registration failed");
+      toast.success("Notification Registered", "We will alert you as soon as fiber coverage goes live!");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Registration failed. Please try again.";
+      toast.error("Registration Error", msg);
     }
   };
 
@@ -209,9 +223,9 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="glass-card p-6 rounded-2xl border flex flex-col items-center text-center space-y-4 hover:shadow-glass hover:-translate-y-1 transition duration-300">
-            <div className="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center text-white">
-              <Zap size={22} />
+          <div className="clay-card-interactive p-6 flex flex-col items-center text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl clay-button-purple flex items-center justify-center text-white shadow-md">
+              <Zap size={24} />
             </div>
             <h3 className="font-extrabold text-lg text-slate-800 dark:text-white">Unlimited High Speed</h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm">
@@ -219,9 +233,9 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="glass-card p-6 rounded-2xl border flex flex-col items-center text-center space-y-4 hover:shadow-glass hover:-translate-y-1 transition duration-300">
-            <div className="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center text-white">
-              <ShieldCheck size={22} />
+          <div className="clay-card-interactive p-6 flex flex-col items-center text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl clay-button-purple flex items-center justify-center text-white shadow-md">
+              <ShieldCheck size={24} />
             </div>
             <h3 className="font-extrabold text-lg text-slate-800 dark:text-white">Zero Installation Fee</h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm">
@@ -229,9 +243,9 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="glass-card p-6 rounded-2xl border flex flex-col items-center text-center space-y-4 hover:shadow-glass hover:-translate-y-1 transition duration-300">
-            <div className="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center text-white">
-              <Activity size={22} />
+          <div className="clay-card-interactive p-6 flex flex-col items-center text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl clay-button-purple flex items-center justify-center text-white shadow-md">
+              <Activity size={24} />
             </div>
             <h3 className="font-extrabold text-lg text-slate-800 dark:text-white">24/7 Smart SLA Support</h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm">
@@ -254,14 +268,12 @@ export const LandingPage: React.FC = () => {
           {plans.map(plan => (
             <div
               key={plan.id}
-              className={`rounded-2xl border p-6 flex flex-col justify-between relative transition duration-300 ${
-                plan.recommended
-                  ? 'border-tpf-purple bg-gradient-to-b from-purple-50/50 to-pink-50/10 dark:from-purple-950/20 dark:to-slate-900 shadow-glass scale-105'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50'
+              className={`clay-card-interactive p-6 flex flex-col justify-between relative transition duration-300 ${
+                plan.recommended ? 'ring-2 ring-purple-500/50 scale-105' : ''
               }`}
             >
               {plan.recommended && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-tpf-pink text-white font-extrabold text-[10px] rounded-full uppercase tracking-wider">
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 clay-badge-purple font-extrabold text-[11px] uppercase tracking-wider">
                   Recommended
                 </span>
               )}
@@ -294,7 +306,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <button
                 onClick={() => navigate('/onboard', { state: { selectedPlanId: plan.id } })}
-                className="mt-6 w-full py-2.5 rounded-xl font-bold text-xs text-white gradient-bg hover:opacity-95 transition"
+                className="mt-6 w-full py-3 clay-button-purple font-bold text-xs shadow-md"
               >
                 Buy Now
               </button>
@@ -310,19 +322,19 @@ export const LandingPage: React.FC = () => {
         </h2>
 
         <div className="space-y-4">
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border dark:border-slate-800 space-y-2">
+          <div className="clay-card p-5 space-y-2 text-left">
             <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">What documents do I need for KYC?</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               You need a Proof of Identity (Aadhaar Card or PAN Card) and a live passport-size photo. You can upload scanned files and take a webcam photo directly during our onboarding wizard.
             </p>
           </div>
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border dark:border-slate-800 space-y-2">
+          <div className="clay-card p-5 space-y-2 text-left">
             <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">How long does the installation take?</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               Once you complete the payment and select an appointment window, an engineer is assigned. In typical circumstances, our technicians complete connection setup within 24 hours of booking.
             </p>
           </div>
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border dark:border-slate-800 space-y-2">
+          <div className="clay-card p-5 space-y-2 text-left">
             <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">Are there any hidden installation charges?</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               No. Our standard routers and cabling are free of cost. Installation charges are waived on 100 Mbps plans and above. For the basic plan, there is a Rs. 500 charge clearly displayed during checkout.
@@ -334,46 +346,45 @@ export const LandingPage: React.FC = () => {
       {/* Feasibility Result Modal Popup */}
       <AnimatePresence>
         {showFeasibilityModal && feasibilityResult && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-3xl p-8 shadow-2xl max-w-md w-full text-center space-y-6 relative overflow-hidden"
+              className="clay-modal p-8 max-w-md w-full text-center space-y-6 relative overflow-hidden"
             >
               {/* Decorative top colored bar */}
-              <div className={`absolute top-0 inset-x-0 h-2 ${feasibilityResult.feasible ? 'bg-green-500' : 'bg-amber-500'}`} />
+              <div className={`absolute top-0 inset-x-0 h-2.5 ${feasibilityResult.feasible ? 'bg-emerald-500' : 'bg-amber-500'}`} />
 
               <button
                 onClick={() => setShowFeasibilityModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition"
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition"
               >
                 <X size={18} />
               </button>
 
               {feasibilityResult.feasible ? (
                 <div className="space-y-4">
-                  <div className="w-16 h-16 bg-green-50 dark:bg-green-950/30 rounded-full flex items-center justify-center mx-auto text-green-500 border border-green-100 dark:border-green-800/40">
+                  <div className="w-16 h-16 clay-badge-emerald rounded-full flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 size={36} className="animate-bounce" />
                   </div>
                   <h3 className="text-xl font-extrabold text-slate-800 dark:text-white">Congratulations!</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                     TelcoBridge Broadband is fully feasible and available in your area (Pincode: <span className="font-bold text-slate-800 dark:text-slate-200">{pincode}</span>)! You are eligible for high-speed symmetric internet up to 1 Gbps with Free standard router setup.
-
                   </p>
                   <button
                     onClick={() => {
                       setShowFeasibilityModal(false);
                       navigate('/onboard', { state: { pincode } });
                     }}
-                    className="w-full py-3 rounded-xl font-bold text-sm text-white gradient-bg hover:opacity-95 shadow-md flex items-center justify-center gap-2"
+                    className="w-full py-3.5 clay-button-purple font-bold text-sm shadow-lg flex items-center justify-center gap-2"
                   >
                     Book Connection Now <ArrowRight size={16} />
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950/30 rounded-full flex items-center justify-center mx-auto text-amber-500 border border-amber-100 dark:border-amber-800/40">
+                  <div className="w-16 h-16 clay-badge-amber rounded-full flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
                     <AlertTriangle size={36} className="animate-pulse" />
                   </div>
                   <h3 className="text-xl font-extrabold text-slate-800 dark:text-white">Coverage Expanding Soon!</h3>
@@ -391,18 +402,18 @@ export const LandingPage: React.FC = () => {
                           onChange={e => setNotifyEmail(e.target.value)}
                           placeholder="name@example.com"
                           required
-                          className="w-full border dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          className="w-full clay-input px-4 py-2.5 text-xs dark:text-white"
                         />
                       </div>
                       <button
                         type="submit"
-                        className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm rounded-xl shadow-md flex items-center justify-center gap-1"
+                        className="w-full py-3 clay-button-emerald font-bold text-sm flex items-center justify-center gap-1 shadow-md"
                       >
                         Notify Me
                       </button>
                     </form>
                   ) : (
-                    <div className="p-3 bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 mt-2">
+                    <div className="p-3 clay-badge-emerald text-xs font-bold flex items-center justify-center gap-1.5 mt-2">
                       <CheckCircle2 size={16} /> Successfully registered for network expansion alerts!
                     </div>
                   )}
