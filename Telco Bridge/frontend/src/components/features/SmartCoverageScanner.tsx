@@ -207,42 +207,42 @@ export const SmartCoverageScanner: React.FC<SmartCoverageScannerProps> = ({ onBo
         {feasibilityResult && !checking && (
           <div className="max-w-xl mx-auto animate-fade-in">
             {feasibilityResult.feasible ? (
-              <div className="p-6 rounded-3xl bg-emerald-950/30 border-2 border-emerald-500/40 text-left space-y-5 shadow-2xl backdrop-blur-md">
+              <div className="p-6 rounded-3xl bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500/60 text-left space-y-5 shadow-2xl backdrop-blur-md">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-extrabold text-xl shadow-lg shadow-emerald-500/20">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-extrabold text-xl shadow-lg shadow-emerald-500/20">
                       <CheckCircle2 size={24} />
                     </div>
                     <div>
-                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950">
+                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-sm">
                         100% Coverage Ready
                       </span>
-                      <h4 className="text-lg font-black text-white mt-0.5">Gigabit Optical Fiber Available</h4>
+                      <h4 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">Gigabit Optical Fiber Available</h4>
                     </div>
                   </div>
                   <div className="text-right hidden sm:block">
-                    <span className="text-xs font-mono font-bold text-emerald-400 block">Symmetric High Speed</span>
-                    <span className="text-[10px] text-slate-400">Zero Installation Fee</span>
+                    <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 block">Symmetric High Speed</span>
+                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold">Zero Installation Fee</span>
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                <p className="text-xs text-slate-800 dark:text-slate-300 leading-relaxed font-semibold">
                   {feasibilityResult.msg}
                 </p>
 
                 {/* Specs Grid */}
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-500/20">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Max Speed</span>
-                    <span className="font-extrabold text-emerald-400 text-sm">1 Gbps</span>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/90 border border-emerald-500/30 shadow-sm">
+                    <span className="text-[9px] uppercase font-extrabold text-slate-600 dark:text-slate-400 block">Max Speed</span>
+                    <span className="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm">1 Gbps</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-500/20">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Wi-Fi Router</span>
-                    <span className="font-extrabold text-purple-300 text-xs">Wi-Fi 6 Included</span>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/90 border border-emerald-500/30 shadow-sm">
+                    <span className="text-[9px] uppercase font-extrabold text-slate-600 dark:text-slate-400 block">Wi-Fi Router</span>
+                    <span className="font-extrabold text-purple-700 dark:text-purple-300 text-xs">Wi-Fi 6 Included</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-500/20">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Latency</span>
-                    <span className="font-extrabold text-cyan-300 text-xs">&lt; 2 ms SLA</span>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/90 border border-emerald-500/30 shadow-sm">
+                    <span className="text-[9px] uppercase font-extrabold text-slate-600 dark:text-slate-400 block">Latency</span>
+                    <span className="font-extrabold text-teal-700 dark:text-cyan-300 text-xs">&lt; 2 ms SLA</span>
                   </div>
                 </div>
 
@@ -253,7 +253,7 @@ export const SmartCoverageScanner: React.FC<SmartCoverageScannerProps> = ({ onBo
                       if (onBookNow) onBookNow(pincode);
                       else navigate('/onboard', { state: { pincode } });
                     }}
-                    className="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl glow-card-hover transition transform active:scale-95"
+                    className="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl glow-card-hover transition transform active:scale-95"
                   >
                     <Zap size={16} fill="currentColor" /> Proceed to Book Connection <ArrowRight size={16} />
                   </button>

@@ -124,3 +124,127 @@
   box-shadow: 0 12px 36px -4px rgba(109, 40, 217, 0.3);
 }
 
+/* 🎨 Claymorphism Design Utilities */
+.clay-card {
+  background: #ffffff;
+  border-radius: 1.75rem;
+  box-shadow: 
+    8px 12px 24px -4px rgba(109, 40, 217, 0.08),
+    inset -4px -4px 10px rgba(0, 0, 0, 0.04),
+    inset 4px 4px 10px rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.3s ease;
+}
+
+.dark .clay-card {
+  background: #0f172a;
+  box-shadow: 
+    8px 12px 28px -4px rgba(0, 0, 0, 0.6),
+    inset -4px -4px 10px rgba(0, 0, 0, 0.5),
+    inset 4px 4px 10px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+}
+
+.clay-button-purple {
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  color: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 
+    6px 8px 20px rgba(124, 58, 237, 0.35),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.25),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.35);
+  transition: all 0.25s ease;
+}
+.clay-button-purple:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    8px 12px 24px rgba(124, 58, 237, 0.45),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.2),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.45);
+}
+
+.clay-button-emerald {
+  background: linear-gradient(135deg, #059669, #0d9488);
+  color: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 
+    6px 8px 20px rgba(5, 150, 105, 0.35),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.25),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.35);
+  transition: all 0.25s ease;
+}
+.clay-button-emerald:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    8px 12px 24px rgba(5, 150, 105, 0.45),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.2),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.45);
+}
+
+.clay-badge-purple {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border-radius: 1rem;
+  box-shadow: 
+    inset -2px -2px 4px rgba(107, 33, 168, 0.1),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+    2px 4px 10px rgba(107, 33, 168, 0.08);
+}
+.dark .clay-badge-purple {
+  background: rgba(107, 33, 168, 0.3);
+  color: #e9d5ff;
+  box-shadow: 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.4),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    2px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.clay-badge-emerald {
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 1rem;
+  box-shadow: 
+    inset -2px -2px 4px rgba(6, 95, 70, 0.1),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+    2px 4px 10px rgba(6, 95, 70, 0.08);
+}
+.dark .clay-badge-emerald {
+  background: rgba(6, 95, 70, 0.35);
+  color: #a7f3d0;
+  box-shadow: 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.4),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    2px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.clay-pill-active {
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  color: #ffffff;
+  border-radius: 0.85rem;
+  box-shadow: 
+    4px 6px 14px rgba(124, 58, 237, 0.3),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.25),
+    inset 2px 2px 5px rgba(255, 255, 255, 0.35);
+}
+
+.clay-pill-inactive {
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 0.85rem;
+  box-shadow: 
+    inset -2px -2px 5px rgba(0, 0, 0, 0.04),
+    inset 2px 2px 5px rgba(255, 255, 255, 0.9),
+    2px 4px 8px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+}
+.dark .clay-pill-inactive {
+  background: #0f172a;
+  color: #cbd5e1;
+  box-shadow: 
+    inset -2px -2px 5px rgba(0, 0, 0, 0.4),
+    inset 2px 2px 5px rgba(255, 255, 255, 0.05),
+    2px 4px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid #334155;
+}
+
+
