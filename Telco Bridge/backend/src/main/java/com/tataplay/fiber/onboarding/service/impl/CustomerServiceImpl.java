@@ -158,6 +158,54 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    public Customer assignPlanWithDetails(String mobileNumber, com.tataplay.fiber.onboarding.dto.PlanSelectionRequest selection) {
+        if (selection == null || selection.getPlanId() == null) {
+            throw new RuntimeException("Plan selection request must include a valid plan ID.");
+        }
+
+        String category = selection.getCustomerCategory() != null ? selection.getCustomerCategory().toUpperCase() : "RETAIL";
+        String billingType = selection.getBillingType() != null ? selection.getBillingType().toUpperCase() : "PREPAID";
+
+        // Business Rule Enforcement: Retail customers MUST use PREPAID billing only
+        if ("RETAIL".equals(category) && "POSTPAID".equals(billingType)) {
+            throw new RuntimeException("Postpaid billing is reserved exclusively for Enterprise accounts. Retail accounts must select Prepaid billing.");
+        }
+
+        Customer customer = getByMobileNumber(mobileNumber);
+        BroadbandPlan plan = planRepository.findById(selection.getPlanId())
+                .orElseThrow(() -> new RuntimeException("Plan not found with ID: " + selection.getPlanId()));
+
+        Optional<Subscription> existingOpt = subscriptionRepository.findByCustomerId(customer.getId());
+        Subscription subscription = existingOpt.orElseGet(() -> Subscription.builder().customer(customer).build());
+
+        subscription.setPlan(plan);
+        subscription.setStatus("PENDING_PAYMENT");
+        subscription.setBillingType(billingType);
+        subscription.setCustomerCategory(category);
+        subscription.setBillingCycleMonths(selection.getBillingCycleMonths() != null ? selection.getBillingCycleMonths() : 1);
+        subscription.setCreditPeriodDays("POSTPAID".equals(billingType) ? (selection.getCreditPeriodDays() != null ? selection.getCreditPeriodDays() : 30) : 0);
+        subscription.setPoNumber(selection.getPoNumber());
+        subscription.setCorporateGstin(selection.getCorporateGstin());
+        subscription.setAppliedCoupon(selection.getCouponCode());
+        subscription.setSecurityDeposit(selection.getSecurityDeposit() != null ? selection.getSecurityDeposit() : 1000.0);
+        
+        if (selection.getAddonIds() != null && !selection.getAddonIds().isEmpty()) {
+            subscription.setSelectedAddons(selection.getAddonIds().toString());
+        }
+
+        subscriptionRepository.save(subscription);
+        customer.setStatus(CustomerStatus.PLAN_CHOSEN);
+        Customer saved = customerRepository.save(customer);
+
+        auditService.log("SELECT_PLAN_ENTERPRISE", 
+                String.format("Plan: %s | Category: %s | Billing: %s | Cycle: %d months", 
+                        plan.getName(), category, billingType, subscription.getBillingCycleMonths()), 
+                mobileNumber);
+        return saved;
+    }
+
+    @Override
+    @Transactional
     public Customer registerLead(String firstName, String lastName, String mobileNumber, String email, Address address) {
         Optional<Customer> existingCustomer = customerRepository.findByMobileNumber(mobileNumber);
         if (existingCustomer.isPresent()) {

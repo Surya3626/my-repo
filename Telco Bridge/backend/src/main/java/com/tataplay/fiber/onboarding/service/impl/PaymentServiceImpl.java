@@ -38,17 +38,25 @@ public class PaymentServiceImpl implements PaymentService {
 
         BroadbandPlan plan = subscription.getPlan();
 
-        double originalPrice = plan.getPrice();
-        double installation = plan.getInstallationCharges();
+        double monthlyPrice = plan.getMonthlyPrice() != null ? plan.getMonthlyPrice() : plan.getPrice();
+        int cycleMonths = subscription.getBillingCycleMonths() != null ? subscription.getBillingCycleMonths() : 1;
+
+        double planCyclePrice = cycleMonths == 12 ? (plan.getAnnualPrice() != null ? plan.getAnnualPrice() : monthlyPrice * 12 * 0.8)
+                : cycleMonths == 6 ? (plan.getSemiAnnualPrice() != null ? plan.getSemiAnnualPrice() : monthlyPrice * 6 * 0.9)
+                : cycleMonths == 3 ? (plan.getQuarterlyPrice() != null ? plan.getQuarterlyPrice() : monthlyPrice * 3 * 0.95)
+                : monthlyPrice;
+
+        double securityDeposit = subscription.getSecurityDeposit() != null ? subscription.getSecurityDeposit() : (cycleMonths >= 6 ? 0.0 : 1000.0);
+        double installation = (cycleMonths >= 6 || "ENTERPRISE".equals(subscription.getCustomerCategory())) ? 0.0 : (plan.getInstallationCharges() != null ? plan.getInstallationCharges() : 500.0);
         double discount = 0.0;
 
         if (couponCode != null && !couponCode.trim().isEmpty()) {
-            discount = planService.validateCoupon(couponCode, originalPrice);
+            discount = planService.calculateSafeDiscount(couponCode, planCyclePrice, subscription.getCustomerCategory());
         }
 
-        double taxableAmount = originalPrice - discount;
+        double taxableAmount = Math.max(0.0, planCyclePrice - discount);
         double tax = taxableAmount * 0.18; // 18% GST standard telecom tax
-        double totalAmount = taxableAmount + tax + installation;
+        double totalAmount = taxableAmount + tax + installation + securityDeposit;
 
         String transactionId = "TXN" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 

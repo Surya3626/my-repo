@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Zap, Check, X, Shield, Sparkles } from 'lucide-react';
+import { Zap, Check, X, Sparkles, Shield, Laptop, Tv, Gamepad2 } from 'lucide-react';
 import { useToast } from '../common/Toast';
+import api from '../../utils/api';
 
 interface SmartPlanMatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   plans: any[];
+  customerCategory?: 'RETAIL' | 'ENTERPRISE';
   onSelectPlan: (plan: any) => void;
 }
 
@@ -13,44 +15,67 @@ export const SmartPlanMatchModal: React.FC<SmartPlanMatchModalProps> = ({
   isOpen,
   onClose,
   plans,
+  customerCategory = 'RETAIL',
   onSelectPlan,
 }) => {
   const { toast } = useToast();
-  const [deviceCount, setDeviceCount] = useState<string>('5-10');
-  const [useCase, setUseCase] = useState<string>('wfh_gaming');
-  const [budget, setBudget] = useState<string>('mid');
+  const [deviceCount, setDeviceCount] = useState<number>(5);
+  const [primaryUsage, setPrimaryUsage] = useState<string>('STREAMING_4K');
+  const [needOtt, setNeedOtt] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [recommendedPlan, setRecommendedPlan] = useState<any>(null);
   const [calculatedMatch, setCalculatedMatch] = useState<number>(0);
 
   if (!isOpen) return null;
 
-  const handleCalculateMatch = () => {
-    let targetSpeed = 300;
-    if (useCase === 'basic') targetSpeed = 100;
-    else if (useCase === 'wfh_gaming') targetSpeed = 300;
-    else if (useCase === 'heavy_streaming') targetSpeed = 500;
+  const handleCalculateMatch = async () => {
+    setLoading(true);
+    try {
+      const res = await api.post('/plans/recommend', {
+        deviceCount,
+        primaryUsage,
+        customerCategory,
+        needOtt
+      });
 
-    let best = plans.find(p => p.speedMbps >= targetSpeed) || plans[0] || {
-      name: 'TelcoBridge Ultra 300 Mbps',
+      if (res.data?.success && res.data.data) {
+        const rec = res.data.data;
+        setRecommendedPlan(rec);
+        setCalculatedMatch(98);
+        toast.success('Smart Match Found!', `${rec.name} (${rec.speedMbps} Mbps) is a 98% optimal match for your network load.`);
+      } else {
+        let targetSpeed = 100;
+        if (primaryUsage === 'GAMING' || deviceCount > 10) targetSpeed = 300;
+        else if (primaryUsage === 'STREAMING_4K' || deviceCount > 5) targetSpeed = 150;
+        else if (primaryUsage === 'WFH') targetSpeed = 100;
 
-      price: 999,
-      speedMbps: 300
-    };
-
-    const match = 96;
-    setRecommendedPlan(best);
-    setCalculatedMatch(match);
-    toast.success('Smart Match Found!', `${best.name || 'Ultra 300 Mbps'} is a ${match}% match for your usage!`);
+        const best = plans.find(p => p.speedMbps >= targetSpeed) || plans[0];
+        setRecommendedPlan(best);
+        setCalculatedMatch(95);
+      }
+    } catch (err) {
+      let targetSpeed = 100;
+      if (primaryUsage === 'GAMING' || deviceCount > 10) targetSpeed = 300;
+      else if (primaryUsage === 'STREAMING_4K' || deviceCount > 5) targetSpeed = 150;
+      const best = plans.find(p => p.speedMbps >= targetSpeed) || plans[0];
+      setRecommendedPlan(best);
+      setCalculatedMatch(95);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
-      <div className="glass-panel border-2 border-purple-500/40 rounded-3xl p-6 bg-slate-900 text-white w-full max-w-md shadow-2xl space-y-5 text-left">
-        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-          <span className="text-xs font-extrabold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles size={16} /> Smart Plan Recommendation Engine
-          </span>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg">
+      <div className="clay-modal p-6 text-slate-800 dark:text-white w-full max-w-lg shadow-2xl space-y-5 text-left relative">
+        <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div>
+            <span className="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles size={16} /> Bandwidth Needs Calculator ({customerCategory})
+            </span>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">Analyse connected devices and peak usage to compute optimal plan.</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl transition">
             <X size={18} />
           </button>
         </div>
@@ -58,55 +83,100 @@ export const SmartPlanMatchModal: React.FC<SmartPlanMatchModalProps> = ({
         {!recommendedPlan ? (
           <div className="space-y-4 text-xs">
             <div className="flex flex-col gap-1.5">
-              <label className="font-bold text-slate-400 uppercase text-[10px]">1. Connected Devices Count</label>
-              <select
-                value={deviceCount}
-                onChange={e => setDeviceCount(e.target.value)}
-                className="border border-slate-800 bg-slate-950 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
-              >
-                <option value="1-4">1 - 4 Devices (Basic Home)</option>
-                <option value="5-10">5 - 10 Devices (Family / Smart Home)</option>
-                <option value="10+">10+ Devices (Heavy WFH &amp; Gaming)</option>
-              </select>
+              <label className="font-extrabold text-slate-700 dark:text-slate-300 uppercase text-[10px]">
+                1. How many active devices connect simultaneously?
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="1"
+                  max="25"
+                  value={deviceCount}
+                  onChange={e => setDeviceCount(parseInt(e.target.value))}
+                  className="w-full accent-purple-600 cursor-pointer"
+                />
+                <span className="px-3.5 py-1.5 clay-badge-purple font-extrabold min-w-[65px] text-center text-xs">
+                  {deviceCount} Devs
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="font-bold text-slate-400 uppercase text-[10px]">2. Primary Online Activity</label>
-              <select
-                value={useCase}
-                onChange={e => setUseCase(e.target.value)}
-                className="border border-slate-800 bg-slate-950 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
-              >
-                <option value="basic">Social Media &amp; Browsing</option>
-                <option value="wfh_gaming">Work From Home, Video Calls &amp; Gaming</option>
-                <option value="heavy_streaming">Multiple 4K Streamers &amp; Heavy Transfers</option>
-              </select>
+              <label className="font-extrabold text-slate-700 dark:text-slate-300 uppercase text-[10px]">
+                2. Primary Network Activity Profile
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { id: 'STREAMING_4K', label: '4K / 8K Streaming', icon: <Tv size={14} /> },
+                  { id: 'GAMING', label: 'Esports & Gaming', icon: <Gamepad2 size={14} /> },
+                  { id: 'WFH', label: 'Work From Home & VPN', icon: <Laptop size={14} /> },
+                  { id: 'SMART_HOME', label: 'Smart IoT & Security', icon: <Shield size={14} /> },
+                ].map(opt => {
+                  const isSelected = primaryUsage === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setPrimaryUsage(opt.id)}
+                      className={`p-3 rounded-2xl flex items-center gap-2 font-bold transition text-left ${
+                        isSelected ? 'clay-pill-active scale-105' : 'clay-pill-inactive'
+                      }`}
+                    >
+                      <span>{opt.icon}</span>
+                      <span className="text-[11px]">{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3.5 clay-card">
+              <div>
+                <span className="font-bold text-slate-800 dark:text-slate-200">Include Premium OTT App Bundles?</span>
+                <p className="text-[9px] text-slate-500 dark:text-slate-400">Disney+ Hotstar, SonyLIV, ZEE5, Prime Video access</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={needOtt}
+                onChange={e => setNeedOtt(e.target.checked)}
+                className="w-4 h-4 accent-purple-600 cursor-pointer"
+              />
             </div>
 
             <button
               type="button"
+              disabled={loading}
               onClick={handleCalculateMatch}
-              className="w-full py-3 mt-2 bg-gradient-to-r from-tpf-purple to-tpf-pink text-white text-xs font-extrabold rounded-2xl shadow hover:opacity-90 transition flex items-center justify-center gap-1.5"
+              className="w-full py-3.5 mt-2 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2"
             >
-              <Zap size={16} /> Calculate Smart Match
+              <Zap size={16} /> {loading ? 'Calculating Bandwidth...' : 'Calculate Recommended Plan'}
             </button>
           </div>
         ) : (
-          <div className="space-y-4 animate-fade-in">
-            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-2xl space-y-2 text-center">
-              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 font-extrabold text-xs rounded-full inline-block">
-                ⚡ {calculatedMatch}% Recommended Match
-              </span>
-              <h3 className="font-extrabold text-lg text-white">{recommendedPlan.name}</h3>
-              <p className="text-2xl font-black text-purple-400">₹{recommendedPlan.price}<span className="text-xs text-slate-400 font-normal"> / month</span></p>
-              <p className="text-xs text-slate-300">Symmetric {recommendedPlan.speedMbps || 300} Mbps speed for {useCase.replace('_', ' ')}.</p>
+          <div className="space-y-4 animate-fade-in text-left">
+            <div className="p-5 clay-card space-y-3 border-2 border-purple-500/30">
+              <div className="flex justify-between items-center">
+                <span className="px-3 py-1 clay-badge-emerald font-black text-xs inline-flex items-center gap-1">
+                  ⚡ {calculatedMatch}% Optimal Match
+                </span>
+                <span className="text-[10px] text-purple-600 dark:text-purple-300 font-extrabold uppercase tracking-wider">
+                  Target: {recommendedPlan.speedMbps} Mbps
+                </span>
+              </div>
+              <h3 className="font-black text-xl text-slate-900 dark:text-white">{recommendedPlan.name}</h3>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-purple-600 dark:text-purple-400">₹{recommendedPlan.price}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">/ 30 Days</span>
+                <span className="text-[10px] clay-badge-purple px-2 py-0.5 font-bold">1:1 Symmetric Fiber</span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300">{recommendedPlan.description}</p>
             </div>
 
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setRecommendedPlan(null)}
-                className="w-1/3 py-2.5 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-800"
+                className="w-1/3 py-3 clay-button-slate text-xs font-bold"
               >
                 Re-calculate
               </button>
@@ -116,9 +186,9 @@ export const SmartPlanMatchModal: React.FC<SmartPlanMatchModalProps> = ({
                   onSelectPlan(recommendedPlan);
                   onClose();
                 }}
-                className="w-2/3 py-2.5 bg-tpf-purple text-white text-xs font-extrabold rounded-xl shadow hover:opacity-90 flex items-center justify-center gap-1"
+                className="w-2/3 py-3 clay-button-purple text-xs font-extrabold flex items-center justify-center gap-1"
               >
-                <Check size={14} /> Select Plan
+                <Check size={14} /> Confirm & Select Plan
               </button>
             </div>
           </div>

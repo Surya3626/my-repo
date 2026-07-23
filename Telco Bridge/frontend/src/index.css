@@ -251,6 +251,19 @@
     inset 4px 4px 10px rgba(255, 255, 255, 0.08);
 }
 
+.clay-card-selected {
+  background: linear-gradient(135deg, #6d28d9, #4338ca) !important;
+  color: #ffffff !important;
+  border-radius: 1.75rem;
+  box-shadow: 
+    8px 12px 28px -4px rgba(109, 40, 217, 0.45),
+    inset -4px -4px 10px rgba(0, 0, 0, 0.3),
+    inset 4px 4px 10px rgba(255, 255, 255, 0.35) !important;
+  border: 2.5px solid #a855f7 !important;
+  transform: translateY(-4px) scale(1.02);
+  transition: all 0.3s ease;
+}
+
 /* Clay Inputs */
 .clay-input {
   background: #f8fafc;

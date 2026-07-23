@@ -64,20 +64,39 @@ public class PortalController {
     }
 
     @PostMapping("/plan/select")
-    public ResponseEntity<ApiResponse<Customer>> selectPlan(@RequestParam Long planId) {
+    public ResponseEntity<ApiResponse<Customer>> selectPlan(
+            @RequestBody(required = false) com.tataplay.fiber.onboarding.dto.PlanSelectionRequest request,
+            @RequestParam(required = false) Long planId) {
         String mobileNumber = SecurityContextHolder.getContext().getAuthentication().getName();
-        Customer customer = customerService.assignPlan(mobileNumber, planId);
+        
+        com.tataplay.fiber.onboarding.dto.PlanSelectionRequest selectionReq = request;
+        if (selectionReq == null) {
+            if (planId == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Plan ID or selection payload is required", null));
+            }
+            selectionReq = com.tataplay.fiber.onboarding.dto.PlanSelectionRequest.builder()
+                    .planId(planId)
+                    .customerCategory("RETAIL")
+                    .billingType("PREPAID")
+                    .billingCycleMonths(1)
+                    .build();
+        }
+
+        Customer customer = customerService.assignPlanWithDetails(mobileNumber, selectionReq);
         customer = customerService.createAccountAndCustomer(mobileNumber);
         return ResponseEntity.ok(ApiResponse.success("Plan selected successfully and account created", customer));
     }
 
     @PostMapping("/relocate")
-    public ResponseEntity<ApiResponse<Void>> requestRelocation(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<ApiResponse<Void>> requestRelocation(@RequestBody Map<String, Object> payload) {
         String mobileNumber = SecurityContextHolder.getContext().getAuthentication().getName();
-        String newAddress = payload.get("newAddress");
+        String newAddress = payload.get("newAddress") != null ? payload.get("newAddress").toString() : "";
+        String city = payload.get("city") != null ? payload.get("city").toString() : "";
+        String pincode = payload.get("pincode") != null ? payload.get("pincode").toString() : "";
         
-        auditService.log("RELOCATION_REQUESTED", "Customer requested relocation to: " + newAddress, mobileNumber);
-        return ResponseEntity.ok(ApiResponse.success("Relocation request raised. Support will call you in 24 hours."));
+        String fullDetails = String.format("%s, City: %s, Pincode: %s", newAddress, city, pincode);
+        auditService.log("RELOCATION_REQUESTED", "Customer requested relocation to: " + fullDetails, mobileNumber);
+        return ResponseEntity.ok(ApiResponse.success("Relocation request raised. Field engineering team assigned for address feasibility visit."));
     }
 
     @PostMapping("/feedback")
@@ -238,6 +257,8 @@ public class PortalController {
         Customer customer = customerService.getByMobileNumber(mobileNumber);
 
         Integer durationDays = payload.get("durationDays") != null ? Integer.valueOf(payload.get("durationDays").toString()) : 14;
+        String startDate = payload.get("startDate") != null ? payload.get("startDate").toString() : "";
+        String endDate = payload.get("endDate") != null ? payload.get("endDate").toString() : "";
         String reason = payload.get("reason") != null ? payload.get("reason").toString() : "Vacation / Travel";
 
         if (durationDays < 7 || durationDays > 90) {
@@ -251,10 +272,11 @@ public class PortalController {
             subscriptionRepository.save(sub);
         }
 
-        auditService.log("VACATION_HOLD_REQUESTED", 
-                String.format("Customer requested connection hold for %d days. Reason: %s", durationDays, reason), mobileNumber);
+        String auditMsg = String.format("Customer requested connection hold from %s to %s (%d days). Reason: %s", 
+                startDate, endDate, durationDays, reason);
+        auditService.log("VACATION_HOLD_REQUESTED", auditMsg, mobileNumber);
 
-        return ResponseEntity.ok(ApiResponse.success("Connection put on Vacation Hold for " + durationDays + " days. Zero rental will apply during hold period."));
+        return ResponseEntity.ok(ApiResponse.success("Connection placed on Vacation Hold from " + startDate + " to " + endDate + " (" + durationDays + " days). Zero rental applies."));
     }
 
     // ─── Support Ticket Creation Endpoint ──────────────────────────────

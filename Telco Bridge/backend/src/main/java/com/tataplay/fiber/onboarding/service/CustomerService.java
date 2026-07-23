@@ -14,5 +14,6 @@ public interface CustomerService {
     Customer updateStatus(String mobileNumber, CustomerStatus status);
     Customer saveAddress(String mobileNumber, Address address);
     Customer assignPlan(String mobileNumber, Long planId);
+    Customer assignPlanWithDetails(String mobileNumber, com.tataplay.fiber.onboarding.dto.PlanSelectionRequest selection);
     Customer updateProfile(String mobileNumber, String firstName, String lastName, String email);
 }
