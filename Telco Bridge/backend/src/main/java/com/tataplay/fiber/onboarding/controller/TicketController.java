@@ -44,4 +44,32 @@ public class TicketController {
         
         return ResponseEntity.ok(ApiResponse.success("Technician location updated", updatedTicket));
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<InstallationTicket>> searchTicket(@RequestParam String query) {
+        if (query == null || query.trim().isEmpty()) {
+            throw new RuntimeException("Ticket reference or mobile number is required.");
+        }
+        String cleanQuery = query.trim();
+        InstallationTicket ticket;
+        try {
+            if (cleanQuery.startsWith("TPF") || cleanQuery.startsWith("TKT") || cleanQuery.startsWith("SR") || cleanQuery.startsWith("RELOC")) {
+                ticket = ticketService.getTicketByNumber(cleanQuery);
+            } else {
+                ticket = ticketService.getTicketByMobile(cleanQuery);
+            }
+        } catch (Exception e) {
+            ticket = ticketService.getTicketByNumber(cleanQuery);
+        }
+
+        InstallationTicket updatedTicket = ticketService.simulateEngineerMovement(ticket.getTicketNumber());
+        return ResponseEntity.ok(ApiResponse.success("Ticket details retrieved", updatedTicket));
+    }
+
+    @GetMapping("/track/{ticketNumber}")
+    public ResponseEntity<ApiResponse<InstallationTicket>> trackByTicketNumber(@PathVariable String ticketNumber) {
+        InstallationTicket ticket = ticketService.getTicketByNumber(ticketNumber);
+        InstallationTicket updatedTicket = ticketService.simulateEngineerMovement(ticket.getTicketNumber());
+        return ResponseEntity.ok(ApiResponse.success("Technician location updated for ticket " + ticketNumber, updatedTicket));
+    }
 }

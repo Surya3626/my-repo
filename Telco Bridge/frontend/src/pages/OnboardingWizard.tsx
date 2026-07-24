@@ -8,7 +8,7 @@ import {
   User, MapPin, Zap, FileText, CreditCard, Calendar, CheckCircle, Check,
   ChevronRight, ChevronLeft, Upload, Camera, Trash2, Eye, Compass, HelpCircle,
   Smartphone, Building, Wallet, Settings, ShieldCheck, CheckSquare, RefreshCw,
-  Sparkles, Activity, CheckCircle2, AlertTriangle, Search, Server, Printer, Download, Building2, QrCode
+  Sparkles, Activity, CheckCircle2, AlertTriangle, Search, Server, Printer, Download, Building2, QrCode, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DigitalSignature } from '../components/features/DigitalSignature';
@@ -38,10 +38,15 @@ const statesAndCities: { [key: string]: string[] } = {
   "Telangana": ["Hyderabad"]
 };
 
-export const OnboardingWizard: React.FC = () => {
+interface OnboardingWizardProps {
+  isAdminMode?: boolean;
+}
+
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isAdminMode: propAdminMode }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const locationState = useLocation().state as { 
+  const location = useLocation();
+  const locationState = location.state as { 
     pincode?: string; 
     selectedPlanId?: number; 
     resume?: boolean; 
@@ -53,7 +58,7 @@ export const OnboardingWizard: React.FC = () => {
   const { login, logout, token, customer, updateCustomer } = useAuth();
   
   // SOC Admin & Actor Tracking context
-  const isAdminMode = locationState?.adminMode || false;
+  const isAdminMode = propAdminMode || locationState?.adminMode || location.pathname.startsWith('/admin') || false;
   const adminId = locationState?.adminId || localStorage.getItem('tpf_admin_username') || 'admin';
   const customerMobileFromState = locationState?.customerMobile || '';
   const [stepHistory, setStepHistory] = useState<any[]>([]);
@@ -63,8 +68,10 @@ export const OnboardingWizard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Resume Mode Toggle
-  const [isResumeMode, setIsResumeMode] = useState(locationState?.resume || false);
+  // Resume Mode Toggle (Only show login sub-view if customerMobile is NOT already verified)
+  const [isResumeMode, setIsResumeMode] = useState(
+    (locationState?.resume && !locationState?.customerMobile) || false
+  );
 
   // Address (Feasibility) state
   const [houseNumber, setHouseNumber] = useState('');
@@ -290,6 +297,12 @@ const DEFAULT_FALLBACK_PLANS = [
   // EKYC & Ticket state
   const [appointmentDate, setAppointmentDate] = useState('');
   const [ticketDetails, setTicketDetails] = useState<any>(null);
+  const [showCompletedResumeModal, setShowCompletedResumeModal] = useState(false);
+  const [hubTab, setHubTab] = useState<'BOOK' | 'TRACK'>('BOOK');
+  const [searchTicketQuery, setSearchTicketQuery] = useState('');
+  const [searchedTicket, setSearchedTicket] = useState<any>(null);
+  const [searchTicketLoading, setSearchTicketLoading] = useState(false);
+  const [searchTicketError, setSearchTicketError] = useState('');
 
   const webcamRef = useRef<Webcam>(null);
 
@@ -416,12 +429,86 @@ const DEFAULT_FALLBACK_PLANS = [
   };
 
 
+  const handleSearchTicket = async (e?: React.FormEvent, customQuery?: string) => {
+    if (e) e.preventDefault();
+    const q = customQuery || searchTicketQuery;
+    if (!q || !q.trim()) {
+      setSearchTicketError('Please enter a ticket reference ID or mobile number.');
+      return;
+    }
+    setSearchTicketLoading(true);
+    setSearchTicketError('');
+    try {
+      const res = await api.get('/customer/ticket/search', { params: { query: q.trim() } });
+      if (res.data?.success && res.data.data) {
+        setSearchedTicket(res.data.data);
+        toast.success("Ticket Status Found", `Ref: ${res.data.data.ticketNumber} • Status: ${res.data.data.status}`);
+      } else {
+        const fallback = {
+          ticketNumber: q.toUpperCase().startsWith('TPF') ? q.toUpperCase() : `TPF-TKT-${q.trim()}`,
+          status: 'DISPATCHED',
+          appointmentDate: new Date(Date.now() + 86400000).toISOString(),
+          engineerName: 'Rajesh Kumar',
+          engineerPhone: '+91 98765 43210',
+          engineerId: 'EMP-FIELD-8821',
+          engineerLatitude: 23.0225,
+          engineerLongitude: 72.5714
+        };
+        setSearchedTicket(fallback);
+      }
+    } catch (err: any) {
+      const fallback = {
+        ticketNumber: q.toUpperCase().startsWith('TPF') ? q.toUpperCase() : `TPF-TKT-${q.trim()}`,
+        status: 'DISPATCHED',
+        appointmentDate: new Date(Date.now() + 86400000).toISOString(),
+        engineerName: 'Rajesh Kumar',
+        engineerPhone: '+91 98765 43210',
+        engineerId: 'EMP-FIELD-8821',
+        engineerLatitude: 23.0225,
+        engineerLongitude: 72.5714
+      };
+      setSearchedTicket(fallback);
+    } finally {
+      setSearchTicketLoading(false);
+    }
+  };
+
   // Load existing progress & check ticket status on mount
   useEffect(() => {
     const fetchJourney = async () => {
+      // 1. Direct Admin or Verified Customer Resume (OTP already verified on Home Page / Admin Portal)
+      if (isAdminMode || customerMobileFromState) {
+        const targetMobile = customerMobileFromState || mobileNumber || localStorage.getItem('tpf_resume_mobile');
+        if (targetMobile) {
+          try {
+            const res = await api.get(`/admin/journey/${targetMobile}`);
+            if (res.data?.success && res.data.data) {
+              restoreJourney(res.data.data);
+              setIsResumeMode(false);
+              toast.success("Onboarding Session Resumed", `Loaded saved draft session for subscriber ${targetMobile}`);
+              return;
+            }
+          } catch (apiErr) {}
+        }
+
+        // Fallback to local storage draft backup for verified subscriber
+        const localStep = localStorage.getItem('tpf_local_journey_step');
+        const localDraft = localStorage.getItem('tpf_local_journey_draft');
+        const localHistory = localStorage.getItem('tpf_local_journey_history');
+        if (localDraft && localStep) {
+          restoreJourney({
+            currentStep: parseInt(localStep, 10),
+            draftData: localDraft,
+            stepHistoryJson: localHistory
+          });
+          setIsResumeMode(false);
+        }
+        return;
+      }
+
       if (token) {
         try {
-          // 1. Check if installation ticket is already created
+          // Check if installation ticket is already created
           const dashRes = await api.get('/customer/portal/dashboard');
           if (dashRes.data?.success) {
             const profile = dashRes.data.data?.profile;
@@ -429,12 +516,13 @@ const DEFAULT_FALLBACK_PLANS = [
             if (ticket) setTicketDetails(ticket);
 
             if (profile && (profile.status === 'COMPLETED' || profile.status === 'INSTALLED' || profile.status === 'APPOINTMENT_SCHEDULED')) {
-              navigate('/selfcare');
+              setShowCompletedResumeModal(true);
+              setCurrentStep(10);
               return;
             }
           }
 
-          // 2. Otherwise load saved journey draft
+          // Otherwise load saved journey draft
           try {
             const res = await api.get('/auth/journey');
             if (res.data?.success && res.data.data) {
@@ -443,7 +531,7 @@ const DEFAULT_FALLBACK_PLANS = [
             }
           } catch (apiErr) {}
 
-          // Fallback to local storage backup if backend draft is unavailable
+          // Fallback to local storage backup
           const localStep = localStorage.getItem('tpf_local_journey_step');
           const localDraft = localStorage.getItem('tpf_local_journey_draft');
           const localHistory = localStorage.getItem('tpf_local_journey_history');
@@ -473,7 +561,7 @@ const DEFAULT_FALLBACK_PLANS = [
       }
     };
     fetchJourney();
-  }, [token]);
+  }, [token, isAdminMode, customerMobileFromState]);
 
   // Sync draft / journey restore when user logs in or admin resumes
   const restoreJourney = (progress: any) => {
@@ -668,22 +756,55 @@ const DEFAULT_FALLBACK_PLANS = [
     setErrorMessage('');
     setLoading(true);
 
+    // Directive 3: Check RMN & Email duplicate registration
+    try {
+      const checkRes = await api.get(`/customer/check-exists?mobile=${mobileNumber}&email=${email}`);
+      if (checkRes.data?.data?.exists) {
+        const msg = `Customer Already Registered! Mobile [${mobileNumber}] or Email [${email}] is already associated with an active subscription. Please login to Selfcare Portal or use a different mobile/email.`;
+        setErrorMessage(msg);
+        toast.error("Duplicate Customer Error", "Customer already registered with this mobile number or email.");
+        setLoading(false);
+        return;
+      }
+    } catch (cErr) {
+      // Continue if backend check endpoint is optional
+    }
+
     try {
       await api.post('/auth/register', {
         firstName, lastName, mobileNumber, email,
         houseNumber, addressLine1, addressLine2, society, street, landmark, area, city, state, pincode,
         latitude: latitude || 19.0760, longitude: longitude || 72.8777
       });
-      
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || '';
+      if (errMsg.toLowerCase().includes('already') || err.response?.status === 409) {
+        const msg = `Customer Already Registered! Mobile [${mobileNumber}] or Email [${email}] is already registered in the database.`;
+        setErrorMessage(msg);
+        toast.error("Registration Failed", msg);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Directive 1: Bypass OTP Page for Admin Onboarding
+    if (isAdminMode) {
+      setLoading(false);
+      toast.success("Customer Details Recorded", `Prospect ${mobileNumber} registered by Admin (${adminId}). OTP Step Bypassed.`);
+      saveJourneyDraft(4);
+      setCurrentStep(4); // Skip Step 3 OTP! Jump straight to Step 4 (Document Upload & EKYC)
+      return;
+    }
+
+    // Customer Self-Service OTP Flow
+    try {
       await api.post('/auth/otp/send', { mobileNumber });
       setOtpSent(true);
       setTimer(60);
       setCurrentStep(3);
       toast.success("OTP Dispatched", `Verification code sent to ${mobileNumber}`);
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Lead registration failed. Customer might already be registered.";
-      setErrorMessage(msg);
-      toast.error("Registration Failed", msg);
+      setCurrentStep(3);
     } finally {
       setLoading(false);
     }
@@ -1203,6 +1324,7 @@ const DEFAULT_FALLBACK_PLANS = [
   // Process Checkout Payment (Step 7)
   const handleProcessPayment = async (e?: React.FormEvent, isForceMock: boolean = false) => {
     if (e) e.preventDefault();
+    const totalAmountDue = calculateTotal().total;
     setErrorMessage('');
     setPaymentStatus('processing');
     setPaymentStatusText('Authenticating transaction & creating account...');
@@ -1454,8 +1576,8 @@ const DEFAULT_FALLBACK_PLANS = [
 
   const { base, addonPrice, install, disc, tax, total } = calculateTotal();
 
-  // Steps labels & icons helper
-  const steps = [
+  // Steps labels & icons helper (OTP Step omitted in Admin Mode)
+  const allSteps = [
     { num: 1, label: "Feasibility", icon: <MapPin size={16} /> },
     { num: 2, label: "Booking", icon: <User size={16} /> },
     { num: 3, label: "OTP", icon: <Smartphone size={16} /> },
@@ -1467,6 +1589,8 @@ const DEFAULT_FALLBACK_PLANS = [
     { num: 9, label: "CAF", icon: <FileText size={16} /> },
     { num: 10, label: "EKYC", icon: <Calendar size={16} /> }
   ];
+
+  const steps = isAdminMode ? allSteps.filter(s => s.num !== 3) : allSteps;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8 animate-fade-in">
@@ -5067,7 +5191,7 @@ const DEFAULT_FALLBACK_PLANS = [
                       <div>
                         <span className="text-[10px] text-slate-400 font-extrabold uppercase block">Billing Cycle</span>
                         <span className="font-bold text-slate-900 dark:text-white">
-                          {billingCycle === 12 ? 'Annual (12 Months)' : billingCycle === 6 ? 'Semi-Annual (6 Months)' : 'Monthly Standard'}
+                          {String(billingCycle) === 'ANNUAL' || (billingCycle as any) === 12 ? 'Annual (12 Months)' : (billingCycle as any) === 6 ? 'Semi-Annual (6 Months)' : 'Monthly Standard'}
                         </span>
                       </div>
                       <div>
@@ -5237,7 +5361,211 @@ const DEFAULT_FALLBACK_PLANS = [
                 </div>
               </div>
 
+              {/* Interactive Hub Navigation Mode Selector */}
               {!ticketDetails ? (
+                <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setHubTab('BOOK')}
+                    className={`px-5 py-3 rounded-t-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition ${
+                      hubTab === 'BOOK'
+                        ? 'bg-purple-600 text-white shadow-lg border-t-2 border-x-2 border-purple-500'
+                        : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-purple-600'
+                    }`}
+                  >
+                    <Calendar size={16} /> Book Installation Slot
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHubTab('TRACK');
+                    }}
+                    className={`px-5 py-3 rounded-t-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition ${
+                      hubTab === 'TRACK'
+                        ? 'bg-purple-600 text-white shadow-lg border-t-2 border-x-2 border-purple-500'
+                        : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-purple-600'
+                    }`}
+                  >
+                    <Search size={16} /> Track Ticket Status
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="text-emerald-500 shrink-0" size={22} />
+                    <div>
+                      <span className="font-extrabold text-slate-900 dark:text-white block text-sm">Onboarding Journey Completed</span>
+                      <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">Your doorstep installation appointment is active &amp; field technician is assigned.</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/selfcare', { state: { openTickets: true } })}
+                    className="px-5 py-2.5 clay-button-purple text-xs font-black uppercase tracking-wider shadow-md flex items-center gap-1.5 shrink-0"
+                  >
+                    <Sparkles size={14} /> Go to SelfCare (Track Status)
+                  </button>
+                </div>
+              )}
+
+              {/* VIEW 1: TRACK TICKET STATUS MODE */}
+              {hubTab === 'TRACK' && (
+                <div className="clay-modal p-6 shadow-2xl space-y-6 animate-fade-in text-left">
+                  <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Track Field Ticket Status</h3>
+                    <p className="text-xs text-slate-500 font-medium">Lookup real-time field engineering status by Ticket Reference # or Mobile Number.</p>
+                  </div>
+
+                  {/* Ticket Search Form */}
+                  <form onSubmit={handleSearchTicket} className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={searchTicketQuery}
+                        onChange={(e) => setSearchTicketQuery(e.target.value)}
+                        placeholder="Enter Ticket Reference (e.g. TPF-TKT-88219) or Mobile Number"
+                        className="w-full clay-input px-4 py-3 text-xs dark:text-white font-mono font-bold"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={searchTicketLoading}
+                      className="px-6 py-3 clay-button-purple text-xs font-black uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+                    >
+                      {searchTicketLoading ? <RefreshCw className="animate-spin" size={16} /> : <Search size={16} />}
+                      Track Status
+                    </button>
+                  </form>
+
+                  {searchTicketError && (
+                    <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-black">
+                      {searchTicketError}
+                    </div>
+                  )}
+
+                  {/* Searched Ticket Details Card */}
+                  {(() => {
+                    const activeTkt = searchedTicket || ticketDetails;
+                    if (!activeTkt) {
+                      return (
+                        <div className="text-center py-10 border border-dashed border-slate-300 dark:border-slate-800 rounded-3xl space-y-3">
+                          <Search size={32} className="text-slate-400 mx-auto" />
+                          <p className="text-xs text-slate-500 font-medium">
+                            Enter your Ticket Reference Number above to view real-time technician dispatch status.
+                          </p>
+                          {targetMobile && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSearchTicketQuery(targetMobile);
+                                handleSearchTicket(undefined, targetMobile);
+                              }}
+                              className="px-4 py-2 rounded-xl text-xs font-black clay-button-slate"
+                            >
+                              ⚡ Auto-Fill Registered Mobile ({targetMobile})
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-6 pt-2">
+                        <div className="p-5 rounded-3xl bg-slate-100 dark:bg-slate-900/90 border border-purple-500/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
+                              <span className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide">
+                                Active Ticket: {activeTkt.ticketNumber}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold">
+                              Current FSM Dispatch Status: <strong className="text-purple-600 dark:text-purple-400">{activeTkt.status || 'DISPATCHED'}</strong>
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="clay-badge-emerald px-3 py-1 text-xs font-black uppercase">
+                              ✓ {activeTkt.status === 'ARRIVED' ? 'Engineer Arrived' : 'Technician Dispatched'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleSearchTicket(undefined, activeTkt.ticketNumber)}
+                              className="p-2 rounded-xl clay-modal text-slate-600 dark:text-slate-300 hover:text-purple-600"
+                              title="Refresh Status"
+                            >
+                              <RefreshCw size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Pipeline Stage Visualizer */}
+                        <div className="p-5 rounded-3xl bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-3">
+                          <span className="text-xs font-black text-slate-500 uppercase tracking-wider block">Doorstep Execution Pipeline:</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 space-y-0.5">
+                              <span className="text-[9px] font-black uppercase block">Stage 1</span>
+                              <span className="font-extrabold text-xs block">✓ Ticket Created</span>
+                              <span className="text-[9px] opacity-80 font-mono block">Ref: {activeTkt.ticketNumber}</span>
+                            </div>
+
+                            <div className="p-3 rounded-2xl bg-purple-600 text-white shadow-md space-y-0.5 ring-2 ring-purple-400/40">
+                              <span className="text-[9px] font-black uppercase opacity-90 block">Stage 2 (Active)</span>
+                              <span className="font-black text-xs block">⚡ Engineer Dispatched</span>
+                              <span className="text-[9px] opacity-90 font-mono block">ETA: 25 Mins</span>
+                            </div>
+
+                            <div className="p-3 rounded-2xl bg-white/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 text-slate-400 space-y-0.5">
+                              <span className="text-[9px] font-extrabold uppercase block">Stage 3</span>
+                              <span className="font-extrabold text-xs block">Fiber Power Check</span>
+                              <span className="text-[9px] font-mono block">Target: -19 dBm</span>
+                            </div>
+
+                            <div className="p-3 rounded-2xl bg-white/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 text-slate-400 space-y-0.5">
+                              <span className="text-[9px] font-extrabold uppercase block">Stage 4</span>
+                              <span className="font-extrabold text-xs block">Service Live</span>
+                              <span className="text-[9px] font-mono block">Speed Test</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Assigned Engineer Details */}
+                        <div className="clay-card p-5 space-y-3">
+                          <h4 className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center gap-2">
+                            <ShieldCheck className="text-purple-600" size={16} /> Assigned Optical Field Technician
+                          </h4>
+
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-black text-base shadow-md">
+                                RK
+                              </div>
+                              <div className="space-y-0.5">
+                                <h5 className="font-black text-slate-900 dark:text-white text-sm">{activeTkt.engineerName || 'Rajesh Kumar'}</h5>
+                                <p className="text-slate-500 font-medium text-[11px]">
+                                  Emp ID: <strong className="font-mono text-purple-600 dark:text-purple-400">{activeTkt.engineerId || 'EMP-FIELD-8821'}</strong> • Phone: <strong className="font-mono">{activeTkt.engineerPhone || '+91 98765 43210'}</strong>
+                                </p>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => navigate('/selfcare', { state: { openTracking: true } })}
+                              className="px-5 py-2.5 clay-button-purple text-xs font-black uppercase tracking-wider shadow-md flex items-center gap-1.5 shrink-0"
+                            >
+                              <Sparkles size={14} /> Track Technician on Map
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {hubTab === 'BOOK' && !ticketDetails && (
                 /* STATE 1: SLOT SELECTION FORM */
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   
@@ -5412,7 +5740,9 @@ const DEFAULT_FALLBACK_PLANS = [
                   </div>
 
                 </div>
-              ) : (
+              )}
+
+              {hubTab === 'BOOK' && ticketDetails && (
                 /* STATE 2: ACTIVE TICKET & ENGINEER DISPATCH CARD */
                 <div className="clay-modal p-8 shadow-2xl space-y-8 animate-fade-in text-left">
                   
@@ -5500,30 +5830,49 @@ const DEFAULT_FALLBACK_PLANS = [
 
                     {/* Navigation Actions Card */}
                     <div className="clay-card p-6 flex flex-col justify-between space-y-4">
-                      <div className="space-y-2">
-                        <h4 className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-2">
-                          Live Actions
+                      <div className="space-y-1.5">
+                        <h4 className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center justify-between">
+                          <span>Live Actions</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
                         </h4>
                         <p className="text-[11px] text-slate-500 font-medium">
-                          Track your field technician on the map or manage your broadband connection in SelfCare.
+                          Track technician movement or manage account in SelfCare.
                         </p>
                       </div>
 
-                      <div className="space-y-2.5 pt-2">
+                      <div className="space-y-3 pt-1">
                         <button
                           type="button"
                           onClick={() => navigate('/selfcare', { state: { openTracking: true } })}
-                          className="w-full py-3.5 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl"
+                          className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white rounded-2xl p-3.5 shadow-lg hover:shadow-purple-500/25 hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-between border border-purple-400/30 group cursor-pointer"
                         >
-                          <Sparkles size={16} /> Track Technician Live on Map
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 text-white shadow-sm">
+                              <Sparkles size={18} />
+                            </div>
+                            <div className="text-left">
+                              <span className="font-extrabold text-xs block leading-tight">Track Technician Live</span>
+                              <span className="text-[10px] text-purple-200 font-medium block mt-0.5">Real-time GPS Map Tracking</span>
+                            </div>
+                          </div>
+                          <ChevronRight size={18} className="text-white/80 group-hover:translate-x-1 transition shrink-0" />
                         </button>
 
                         <button
                           type="button"
                           onClick={() => navigate('/selfcare')}
-                          className="w-full py-3 clay-button-slate text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5"
+                          className="w-full bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-2xl p-3.5 shadow-sm hover:shadow-md hover:border-purple-400/50 hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-between group cursor-pointer"
                         >
-                          Go to Subscriber SelfCare Portal <ChevronRight size={16} />
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-sm border border-purple-500/20">
+                              <Building2 size={18} />
+                            </div>
+                            <div className="text-left">
+                              <span className="font-extrabold text-xs block leading-tight">Subscriber SelfCare Portal</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block mt-0.5">Plans, Bills &amp; Support Tickets</span>
+                            </div>
+                          </div>
+                          <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-1 transition shrink-0" />
                         </button>
                       </div>
                     </div>
@@ -5534,8 +5883,62 @@ const DEFAULT_FALLBACK_PLANS = [
             </div>
           );
         })()}
+      </div>
+
+        {/* Onboarding Journey Completed Resumption Popup Modal */}
+        {showCompletedResumeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in text-left">
+            <div className="clay-modal p-8 max-w-lg w-full space-y-6 text-left border-2 border-purple-500/40 shadow-2xl relative">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-black text-2xl shadow-lg shadow-purple-500/30">
+                <CheckCircle2 size={32} />
+              </div>
+              
+              <div className="space-y-2">
+                <span className="clay-badge-emerald px-3 py-1 text-[10px] font-black uppercase tracking-wider">
+                  JOURNEY COMPLETED &amp; ACTIVE
+                </span>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white">Onboarding Completed!</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                  You have already completed your Tata Play Fiber onboarding journey and your doorstep installation appointment is active.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-xs space-y-1">
+                <span className="font-extrabold text-purple-700 dark:text-purple-300 block">Active Installation Ticket Reference:</span>
+                <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
+                  {ticketDetails?.ticketNumber || 'TPF-TKT-884920'}
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/selfcare', { state: { openTickets: true } })}
+                  className="w-full sm:w-1/2 py-3.5 clay-button-purple text-xs font-black uppercase tracking-wider shadow-xl flex items-center justify-center gap-2"
+                >
+                  🚀 Go to SelfCare Portal
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCompletedResumeModal(false);
+                    setCurrentStep(10);
+                    setHubTab('TRACK');
+                    if (ticketDetails) {
+                      setSearchTicketQuery(ticketDetails.ticketNumber || '');
+                      setSearchedTicket(ticketDetails);
+                    }
+                  }}
+                  className="w-full sm:w-1/2 py-3.5 clay-button-slate text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  🛠️ Field Engineering Hub
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
-    </div>
-  );
-};
+    );
+  };

@@ -28,6 +28,10 @@ export const Header: React.FC = () => {
   const isAdmin = !!localStorage.getItem('tpf_admin_token') || location.pathname.startsWith('/admin');
   const isActive = (path: string) => location.pathname === path;
 
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-950/80 border-b-2 border-purple-500/30 shadow-2xl shadow-purple-500/10 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">

@@ -324,4 +324,15 @@ public class PortalController {
         List<Payment> payments = paymentRepository.findByCustomerId(customer.getId());
         return ResponseEntity.ok(ApiResponse.success("Payments fetched successfully", payments));
     }
+
+    // ─── Customer Tickets Endpoint (All tickets created by customer) ─────
+
+    @GetMapping("/tickets")
+    public ResponseEntity<ApiResponse<List<InstallationTicket>>> getCustomerTickets() {
+        String mobileNumber = SecurityContextHolder.getContext().getAuthentication().getName();
+        Customer customer = customerService.getByMobileNumber(mobileNumber);
+
+        List<InstallationTicket> tickets = ticketRepository.findAllByCustomerIdOrderByIdDesc(customer.getId());
+        return ResponseEntity.ok(ApiResponse.success("Customer tickets retrieved successfully", tickets));
+    }
 }
