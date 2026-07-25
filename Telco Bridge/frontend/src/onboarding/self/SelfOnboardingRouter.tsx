@@ -295,8 +295,8 @@ export const SelfOnboardingRouter: React.FC = () => {
         </div>
       )}
 
-      {/* Active step */}
-      <div className="clay-card p-8 relative min-h-[400px] flex flex-col justify-between">
+      {/* Active step container with smooth slide-in transition */}
+      <div key={currentStep} className="clay-card p-8 relative min-h-[400px] flex flex-col justify-between animate-slide-right">
         {currentStep === 'FEASIBILITY_CHECK' && <FeasibilityCheckStep {...stepProps} />}
         {currentStep === 'CUSTOMER_DETAILS' && <CustomerDetailsStep {...stepProps} />}
         {currentStep === 'OTP_VERIFICATION' && <OtpVerificationStep {...stepProps} />}

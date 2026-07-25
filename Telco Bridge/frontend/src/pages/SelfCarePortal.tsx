@@ -17,6 +17,7 @@ import { InvoiceDrawer } from '../components/features/InvoiceDrawer';
 import { RechargeModal } from '../components/features/RechargeModal';
 import { SmartMapAddressPicker, AddressData } from '../components/features/SmartMapAddressPicker';
 import { CustomerDocumentVault } from '../components/features/CustomerDocumentVault';
+import { OtpVortexAnimator } from '../components/features/OtpVortexAnimator';
 
 export const SelfCarePortal: React.FC = () => {
   const { toast } = useToast();
@@ -30,6 +31,7 @@ export const SelfCarePortal: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [authError, setAuthError] = useState('');
   const [authTimer, setAuthTimer] = useState(60);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   useEffect(() => {
     let interval: any = null;
@@ -222,12 +224,30 @@ export const SelfCarePortal: React.FC = () => {
       toast.warning("Invalid OTP", "Please enter 6-digit verification code.");
       return;
     }
-    try {
-      const res = await api.post('/auth/otp/verify', { mobileNumber, otp: otpCode });
-      if (res.data?.success && res.data.data?.token) {
-        login(res.data.data.token, res.data.data.customer);
-        toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
-      } else {
+    setIsVerifyingOtp(true);
+    setTimeout(async () => {
+      try {
+        const res = await api.post('/auth/otp/verify', { mobileNumber, otp: otpCode });
+        if (res.data?.success && res.data.data?.token) {
+          login(res.data.data.token, res.data.data.customer);
+          toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
+        } else {
+          const fallbackToken = 'TOKEN-SC-' + mobileNumber + '-' + Date.now();
+          const fallbackCust = {
+            id: Date.now(),
+            customerId: 'TPF-CUST-' + mobileNumber.slice(-4),
+            accountNumber: 'ACC-' + mobileNumber,
+            connectionId: 'CONN-' + mobileNumber,
+            firstName: 'Subscriber',
+            lastName: '',
+            mobileNumber: mobileNumber,
+            email: `${mobileNumber}@telcobridge.com`,
+            status: 'ACTIVE'
+          };
+          login(fallbackToken, fallbackCust);
+          toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
+        }
+      } catch (err: any) {
         const fallbackToken = 'TOKEN-SC-' + mobileNumber + '-' + Date.now();
         const fallbackCust = {
           id: Date.now(),
@@ -242,23 +262,10 @@ export const SelfCarePortal: React.FC = () => {
         };
         login(fallbackToken, fallbackCust);
         toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
+      } finally {
+        setIsVerifyingOtp(false);
       }
-    } catch (err: any) {
-      const fallbackToken = 'TOKEN-SC-' + mobileNumber + '-' + Date.now();
-      const fallbackCust = {
-        id: Date.now(),
-        customerId: 'TPF-CUST-' + mobileNumber.slice(-4),
-        accountNumber: 'ACC-' + mobileNumber,
-        connectionId: 'CONN-' + mobileNumber,
-        firstName: 'Subscriber',
-        lastName: '',
-        mobileNumber: mobileNumber,
-        email: `${mobileNumber}@telcobridge.com`,
-        status: 'ACTIVE'
-      };
-      login(fallbackToken, fallbackCust);
-      toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
-    }
+    }, 1400);
   };
 
   const handleRelocAddressChange = (data: AddressData) => {
@@ -486,20 +493,14 @@ export const SelfCarePortal: React.FC = () => {
                 </button>
               </div>
 
-              <div className="space-y-2">
-                <label className="font-black text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider">
-                  6-Digit Verification OTP Code
-                </label>
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  pattern="[0-9]{6}"
-                  value={otpCode}
-                  onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="e.g. 123456"
-                  className="w-full clay-input text-center font-mono font-black text-2xl tracking-[0.5em] py-3.5 text-purple-600 dark:text-purple-300"
-                />
+              {/* 3D Swirling OTP Vortex & Victory Celebration Component */}
+              <OtpVortexAnimator
+                otpCode={otpCode}
+                onChange={(code) => setOtpCode(code)}
+                isValidating={isVerifyingOtp}
+                label="6-Digit Verification OTP Code"
+                sublabel={`Code sent to: +91 ${mobileNumber}`}
+              />
                 <div className="flex justify-between items-center text-xs pt-1">
                   <span className="text-slate-400">
                     {authTimer > 0 ? `Resend code in ${authTimer}s` : 'Didn\'t receive OTP?'}
@@ -517,7 +518,6 @@ export const SelfCarePortal: React.FC = () => {
                     </button>
                   )}
                 </div>
-              </div>
 
               <div className="flex gap-3 pt-2">
                 <button

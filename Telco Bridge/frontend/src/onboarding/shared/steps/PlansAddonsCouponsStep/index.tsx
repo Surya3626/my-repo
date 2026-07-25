@@ -369,7 +369,7 @@ export const PlansAddonsCouponsStep: React.FC<Props> = ({ prefill, onComplete, o
                       key={p.id}
                       onClick={() => setSelectedPlan(p)}
                       className={`p-6 text-left cursor-pointer transition-all duration-300 relative rounded-3xl border-2 ${
-                        isSelected ? 'clay-pill-active border-tpf-purple scale-102 shadow-2xl' : 'clay-card border-transparent hover:border-purple-500/40'
+                        isSelected ? 'clay-pill-active border-tpf-purple scale-102 shadow-2xl animate-pulse-glow' : 'clay-card border-transparent hover:border-purple-500/40 hover:scale-[1.02]'
                       }`}
                     >
                       {isSelected ? (
@@ -497,8 +497,8 @@ export const PlansAddonsCouponsStep: React.FC<Props> = ({ prefill, onComplete, o
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <span className="text-xs font-black text-tpf-purple">+ ₹{addon.price}/mo</span>
-                      <div className={`w-6 h-6 rounded-xl flex items-center justify-center transition ${
-                        addon.selected ? 'clay-button-purple text-white' : 'border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900'
+                      <div className={`w-6 h-6 rounded-xl flex items-center justify-center transition-all ${
+                        addon.selected ? 'clay-button-purple text-white animate-pop-bounce' : 'border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900'
                       }`}>
                         {addon.selected && <Check size={12} />}
                       </div>

@@ -77,13 +77,13 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({
               title={`${STEP_META[step].shortLabel}${!isClickable && isCompleted ? ' (Locked after Consent)' : isClickable ? ' (Click to revisit)' : ''}`}
             >
               <div
-                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-xs font-black transition duration-300 ${
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-xs font-black transition-all duration-300 ${
                   isCurrent
-                    ? 'bg-gradient-to-r from-tpf-purple to-tpf-pink text-white shadow-lg shadow-purple-500/40 ring-4 ring-purple-500/30 scale-110'
+                    ? 'bg-gradient-to-r from-tpf-purple to-tpf-pink text-white shadow-lg shadow-purple-500/40 ring-4 ring-purple-500/30 scale-110 animate-pulse-glow'
                     : isCompleted
                     ? isPostConsent && canNavigateTo(channel, journeyStatus, step, completedSteps, isPostConsent) === false
                       ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
-                      : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/40 hover:bg-emerald-200 dark:hover:bg-emerald-500/30'
+                      : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/40 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 animate-pop-bounce'
                     : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-800'
                 }`}
               >

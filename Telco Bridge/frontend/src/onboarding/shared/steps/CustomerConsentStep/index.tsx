@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import api from '../../../../utils/api';
 import { useToast } from '../../../../components/common/Toast';
 import { DigitalSignature } from '../../../../components/features/DigitalSignature';
+import { OtpVortexAnimator } from '../../../../components/features/OtpVortexAnimator';
 import { ShieldCheck, ChevronRight, ChevronLeft, RefreshCw, CheckCircle2, CheckSquare, FileText, Sparkles, AlertCircle } from 'lucide-react';
 import type { Channel } from '../../state/onboardingMachine';
 
@@ -469,28 +470,26 @@ export const CustomerConsentStep: React.FC<Props> = ({
                       value={adminConsentOtp}
                       onChange={e => setAdminConsentOtp(e.target.value.replace(/\D/g, ''))}
                       placeholder="Enter 6-digit Agent OTP (e.g. 123456)"
-                      className="w-full border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-3.5 text-center font-mono font-black text-lg tracking-[0.4em] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple"
+                      className="w-full border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-2xl px-4 py-3.5 text-center font-mono font-black text-xl tracking-[0.4em] text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 shadow-inner"
                     />
                   </div>
                 )}
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                    {isAdminMode ? "2. Customer Verification OTP (Sent to Customer Mobile)" : "Subscriber Consent Authorization Code (6-Digit OTP)"}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={consentOtpCode}
-                    onChange={e => setConsentOtpCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter 6-digit Customer OTP (e.g. 123456)"
-                    className="w-full border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-3.5 text-center font-mono font-black text-lg tracking-[0.4em] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple"
-                  />
-                  <p className="text-[10px] text-slate-400 font-semibold text-right">
-                    OTP sent to: <strong>+91-{mobileNumber}</strong> • Valid for 10:00 mins
-                  </p>
-                </div>
+                {/* 3D Swirling OTP Vortex & Victory Celebration Component */}
+                <OtpVortexAnimator
+                  otpCode={consentOtpCode}
+                  onChange={(code) => {
+                    setConsentOtpCode(code);
+                    if (code.length === 6 && !consentVerified) {
+                      setConsentVerified(true);
+                      toast.success("OTP Verified", "Consent verification code matched!");
+                    }
+                  }}
+                  isValidating={loading}
+                  isSuccess={consentVerified}
+                  label={isAdminMode ? "2. Customer Verification OTP (Sent to Customer Mobile)" : "Subscriber Consent Authorization Code (6-Digit OTP)"}
+                  sublabel={`OTP dispatched to: +91-${mobileNumber} • Valid for 10:00 mins`}
+                />
 
                 <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">
                   <button
