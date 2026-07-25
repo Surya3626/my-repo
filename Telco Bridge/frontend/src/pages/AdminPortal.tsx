@@ -229,6 +229,17 @@ export const AdminPortal: React.FC = () => {
     }
     setInitLoading(true);
     try {
+      const rmnCheck = await api.get(`/auth/check-rmn?mobile=${initMobile}`);
+      if (rmnCheck.data?.data?.isAlreadyRegistered) {
+        toast.info(
+          "Onboarding Already Completed",
+          `Mobile ${initMobile} has already completed onboarding. Access active account via Subscriber Management.`
+        );
+        setShowInitiateModal(false);
+        setInitLoading(false);
+        return;
+      }
+
       const res = await api.post('/admin/onboard/initiate', {
         mobileNumber: initMobile,
         firstName: initFirstName || 'Prospect',
@@ -402,40 +413,33 @@ export const AdminPortal: React.FC = () => {
   const handleViewStepAudit = async (cust: any) => {
     setAuditCustomer(cust);
     setShowAuditModal(true);
-    
-    // Fallback journey tracking object ensuring audit steps are ALWAYS visible
-    const defaultJourney = {
-      currentStep: cust.status === 'COMPLETED' ? 10 : 5,
-      currentPage: cust.status === 'COMPLETED' ? '/onboard/step-10' : '/onboard/step-5',
-      lastPerformedByName: `SOC Admin (${adminUsername || 'admin'})`,
-      lastPerformedById: adminUsername || 'admin',
-      lastPerformedByRole: 'SOC_ADMIN',
-      stepHistoryJson: JSON.stringify([
-        { step: 1, stepName: "Feasibility Check", role: "SOC_ADMIN", actorId: adminUsername || "admin", actorName: `SOC Admin (${adminUsername || "admin"})`, timestamp: "15 mins ago" },
-        { step: 2, stepName: "Customer Details Registered", role: "SOC_ADMIN", actorId: adminUsername || "admin", actorName: `SOC Admin (${adminUsername || "admin"})`, timestamp: "12 mins ago" },
-        { step: 3, stepName: "Plan & Add-on Selection", role: "SOC_ADMIN", actorId: adminUsername || "admin", actorName: `SOC Admin (${adminUsername || "admin"})`, timestamp: "9 mins ago" },
-        { step: 4, stepName: "E-KYC Document Uploaded", role: "CUSTOMER", actorId: cust.mobileNumber, actorName: `${cust.firstName || ''} ${cust.lastName || ''}`, timestamp: "5 mins ago" },
-        { step: 5, stepName: "Dual OTP Consent Verified", role: "SOC_ADMIN", actorId: adminUsername || "admin", actorName: `SOC Admin (${adminUsername || "admin"})`, timestamp: "Just now" }
-      ])
-    };
-
-    setCustomerJourney(defaultJourney);
+    setCustomerJourney(null);
 
     try {
-      const res = await api.get(`/admin/journey/${cust.mobileNumber}`);
-      if (res.data?.success && res.data.data?.stepHistoryJson) {
-        setCustomerJourney(res.data.data);
+      const res = await api.post('/onboarding/resume', { prospectMobile: cust.mobileNumber });
+      if (res.data?.success && res.data.data) {
+        const dto = res.data.data;
+        setCustomerJourney(dto);
+        if (dto.status === 'COMPLETED') {
+          setCustomers(prev => prev.map(c => c.mobileNumber === cust.mobileNumber ? { ...c, status: 'COMPLETED' } : c));
+        }
       }
-    } catch (err) {}
+    } catch (err) {
+      try {
+        const res2 = await api.get(`/onboarding/check?mobile=${cust.mobileNumber}`);
+        if (res2.data?.success && res2.data.data) {
+          setCustomerJourney(res2.data.data);
+          if (res2.data.data.status === 'COMPLETED') {
+            setCustomers(prev => prev.map(c => c.mobileNumber === cust.mobileNumber ? { ...c, status: 'COMPLETED' } : c));
+          }
+        }
+      } catch (_) {}
+    }
   };
 
   // Filter customers to ONLY show customers onboarded by current logged-in SOC User
   const currentAdminUser = adminUsername || 'admin';
-  const displayCustomersList = customers.length > 0 ? customers : [
-    { id: 1, customerId: 'TPF-CUST-88102', firstName: 'Rahul', lastName: 'Sharma', mobileNumber: '9900112233', email: 'rahul.sharma@example.com', status: 'IN_PROGRESS', onboardedBy: 'admin' },
-    { id: 2, customerId: 'TPF-CUST-88104', firstName: 'Priya', lastName: 'Patel', mobileNumber: '9876543210', email: 'priya.patel@example.com', status: 'COMPLETED', onboardedBy: 'admin' },
-    { id: 3, customerId: 'TPF-CUST-88109', firstName: 'Amit', lastName: 'Verma', mobileNumber: '9811223344', email: 'amit.verma@example.com', status: 'DOCUMENT_UPLOADED', onboardedBy: 'admin' },
-  ];
+  const displayCustomersList = customers;
   
   const myOnboardedCustomers = displayCustomersList.filter(cust => {
     const fullName = `${cust.firstName || ''} ${cust.lastName || ''}`.toLowerCase();
@@ -466,11 +470,11 @@ export const AdminPortal: React.FC = () => {
       EKYC_VERIFIED: 920,
       INSTALLED: 890
     },
-    popularPlans: (stats && stats.popularPlans) ? stats.popularPlans : {
-      'Tata Play Fiber 500 Mbps Ultra': 520,
-      'Tata Play Fiber 300 Mbps High-Speed': 410,
-      'Tata Play Fiber 1 Gbps GigaSpeed': 250,
-      'Tata Play Fiber 100 Mbps Starter': 68
+    popularPlans: (stats && stats.popularPlans && Object.keys(stats.popularPlans).length > 0) ? stats.popularPlans : {
+      'Tata Play Fiber 500 Mbps Ultra (₹1,099/mo)': 520,
+      'Tata Play Fiber 300 Mbps Super (₹849/mo)': 410,
+      'Tata Play Fiber 1 Gbps GigaSpeed (₹1,499/mo)': 250,
+      'Tata Play Fiber 100 Mbps Starter (₹599/mo)': 68
     }
   };
 
@@ -1349,26 +1353,28 @@ export const AdminPortal: React.FC = () => {
                   <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="font-black text-slate-900 dark:text-white text-sm">Current Onboarding Progress</span>
-                      <span className="clay-badge-purple px-2.5 py-0.5 text-[10px] font-black font-mono">
-                        Step {customerJourney.currentStep} of 10
+                      <span className={`clay-badge-${customerJourney.status === 'COMPLETED' ? 'emerald' : 'purple'} px-2.5 py-0.5 text-[10px] font-black uppercase font-mono`}>
+                        {customerJourney.status === 'COMPLETED' ? 'COMPLETED' : `Active Step: ${customerJourney.currentStep || 'IN_PROGRESS'}`}
                       </span>
                     </div>
-                    <p className="text-slate-500 text-xs font-medium">Last Page: {customerJourney.currentPage}</p>
+                    <p className="text-slate-500 text-xs font-medium">Channel: <strong>{customerJourney.channel || 'SELF'}</strong></p>
                     <p className="text-slate-500 text-xs font-medium">
-                      Executed By: <strong className="text-slate-900 dark:text-white">{customerJourney.lastPerformedByName || customerJourney.lastPerformedById || 'Customer'}</strong> ({customerJourney.lastPerformedByRole || 'CUSTOMER'})
+                      Last Actor: <strong className="text-slate-900 dark:text-white">{customerJourney.lastActorId || customerJourney.lastPerformedById || 'Customer'}</strong> ({customerJourney.lastActorType || 'CUSTOMER'})
                     </p>
                   </div>
 
-                  {/* Render Visual Journey Timeline */}
+                  {/* Render Visual Journey Timeline dynamically from Backend */}
                   <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
                     <JourneyTimeline
                       mobileNumber={auditCustomer.mobileNumber}
+                      status={customerJourney.status || (auditCustomer.status === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS')}
+                      currentStep={customerJourney.currentStep}
+                      auditTrail={customerJourney.auditTrail || []}
                       stepHistory={
                         customerJourney.stepHistoryJson
                           ? (() => { try { return JSON.parse(customerJourney.stepHistoryJson); } catch (e) { return []; } })()
                           : []
                       }
-                      currentStep={customerJourney.currentStep || 1}
                     />
                   </div>
                 </div>

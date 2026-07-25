@@ -29,6 +29,7 @@ public class AdminController {
     private final CityMasterRepository cityMasterRepository;
     private final AddressRepository addressRepository;
     private final AuditLogRepository auditLogRepository;
+    private final OnboardingJourneyRepository onboardingJourneyRepository;
     private final DocumentService documentService;
     private final AuditService auditService;
     private final JourneyService journeyService;
@@ -128,6 +129,18 @@ public class AdminController {
             @RequestParam(required = false, defaultValue = "admin") String adminId) {
 
         List<Customer> customers = customerRepository.findAll();
+
+        // Sync journey status to Customer entity
+        for (Customer c : customers) {
+            if (c.getMobileNumber() != null) {
+                onboardingJourneyRepository.findTopByProspectMobileOrderByCreatedAtDesc(c.getMobileNumber())
+                        .ifPresent(j -> {
+                            if (j.getStatus() == JourneyStatus.COMPLETED) {
+                                c.setStatus(CustomerStatus.COMPLETED);
+                            }
+                        });
+            }
+        }
 
         Optional<AdminUser> adminOpt = adminUserRepository.findByUsername(adminId);
         if (adminOpt.isPresent() && !adminOpt.get().isGlobalAdmin() && !adminOpt.get().getAssignedCities().contains("ALL")) {

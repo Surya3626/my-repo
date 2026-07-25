@@ -71,6 +71,12 @@ export const ResumeLookup: React.FC = () => {
           return;
         }
 
+        if ((check as any).status === 'COMPLETED') {
+          toast.success('Onboarding Completed!', 'Your connection is active. Redirecting to SelfCare...');
+          navigate('/selfcare');
+          return;
+        }
+
         toast.success('Verified!', 'Resuming your booking...');
         navigate('/onboard', { state: { resumeMobile: mobile } });
       } else {

@@ -3,6 +3,7 @@ package com.tataplay.fiber.onboarding.service.impl;
 import com.tataplay.fiber.onboarding.dto.OnboardingJourneyDto;
 import com.tataplay.fiber.onboarding.dto.StepAuditDto;
 import com.tataplay.fiber.onboarding.entity.*;
+import com.tataplay.fiber.onboarding.repository.CustomerRepository;
 import com.tataplay.fiber.onboarding.repository.OnboardingJourneyRepository;
 import com.tataplay.fiber.onboarding.repository.OnboardingStepAuditRepository;
 import com.tataplay.fiber.onboarding.service.AuditService;
@@ -23,6 +24,7 @@ public class OnboardingJourneyServiceImpl implements OnboardingJourneyService {
 
     private final OnboardingJourneyRepository journeyRepository;
     private final OnboardingStepAuditRepository auditRepository;
+    private final CustomerRepository customerRepository;
     private final AuditService auditService;
 
     // ─── Canonical step orders per channel ──────────────────────────────────────
@@ -179,6 +181,15 @@ public class OnboardingJourneyServiceImpl implements OnboardingJourneyService {
         if (next == null) {
             journey.setCurrentStep(null);
             journey.setStatus(JourneyStatus.COMPLETED);
+
+            // Sync Customer entity status in database
+            if (journey.getProspectMobile() != null) {
+                customerRepository.findByMobileNumber(journey.getProspectMobile()).ifPresent(c -> {
+                    c.setStatus(CustomerStatus.COMPLETED);
+                    customerRepository.save(c);
+                });
+            }
+
             auditService.log("JOURNEY_COMPLETED", "Onboarding journey completed for " + journey.getProspectMobile(), journey.getProspectMobile());
         } else {
             journey.setCurrentStep(next);
