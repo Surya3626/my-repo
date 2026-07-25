@@ -6,6 +6,7 @@ import com.tataplay.fiber.onboarding.dto.AuthRequest;
 import com.tataplay.fiber.onboarding.entity.*;
 import com.tataplay.fiber.onboarding.repository.AdminUserRepository;
 import com.tataplay.fiber.onboarding.repository.CityMasterRepository;
+import com.tataplay.fiber.onboarding.repository.CustomerRepository;
 import com.tataplay.fiber.onboarding.security.JwtTokenProvider;
 import com.tataplay.fiber.onboarding.service.CustomerService;
 import com.tataplay.fiber.onboarding.service.JourneyService;
@@ -90,7 +91,35 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/register")
+    private final CustomerRepository customerRepository;
+    private final com.tataplay.fiber.onboarding.repository.OnboardingJourneyRepository onboardingJourneyRepository;
+
+    @GetMapping("/check-rmn")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> checkRmnUniqueness(@RequestParam String mobile) {
+        if (mobile == null || mobile.isBlank() || mobile.length() < 10) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Valid 10-digit mobile number required", null));
+        }
+
+        boolean existsInCustomer = customerRepository.existsByMobileNumber(mobile);
+        Optional<com.tataplay.fiber.onboarding.entity.OnboardingJourney> journeyOpt = onboardingJourneyRepository.findTopByProspectMobileOrderByCreatedAtDesc(mobile);
+        boolean isCompletedJourney = journeyOpt.isPresent() && journeyOpt.get().getStatus() == JourneyStatus.COMPLETED;
+
+        boolean isRegistered = existsInCustomer || isCompletedJourney;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("mobileNumber", mobile);
+        result.put("isUnique", !isRegistered);
+        result.put("isAlreadyRegistered", isRegistered);
+        if (isRegistered) {
+            result.put("message", "This Registered Mobile Number (RMN) is already associated with an active fiber account.");
+        } else {
+            result.put("message", "RMN is unique and available for onboarding.");
+        }
+
+        return ResponseEntity.ok(ApiResponse.success("RMN Uniqueness Check", result));
+    }
+
+    @PostMapping({"/register", "/customer/register"})
     public ResponseEntity<ApiResponse<Customer>> registerLead(@RequestBody AuthRequest request) {
         Customer customer = customerService.registerOrResume(
                 request.getFirstName(),
@@ -101,30 +130,57 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Lead registered successfully", customer));
     }
 
-    @PostMapping("/otp/send")
+
+
+    @PostMapping({"/send-otp", "/otp/send"})
     public ResponseEntity<ApiResponse<String>> sendOtp(@RequestBody AuthRequest request) {
-        otpService.sendOtp(request.getMobileNumber());
-        return ResponseEntity.ok(ApiResponse.success("OTP sent to mobile: " + request.getMobileNumber(), "SUCCESS"));
+        String mobile = request.getMobileNumber();
+        if (mobile == null || mobile.isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mobile number is required", null));
+        }
+
+        boolean customerExists = customerRepository.findByMobileNumber(mobile).isPresent();
+        boolean journeyExists = onboardingJourneyRepository.findTopByProspectMobileOrderByCreatedAtDesc(mobile).isPresent();
+
+        if (!customerExists && !journeyExists) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("No registered customer, lead or active booking found for mobile: " + mobile, "CUSTOMER_NOT_FOUND"));
+        }
+
+        otpService.sendOtp(mobile);
+        return ResponseEntity.ok(ApiResponse.success("OTP sent to mobile: " + mobile, "SUCCESS"));
     }
 
-    @PostMapping("/otp/verify")
+    @PostMapping({"/verify-otp", "/otp/verify"})
     public ResponseEntity<ApiResponse<Map<String, Object>>> verifyOtp(@RequestBody AuthRequest request) {
-        boolean isValid = otpService.verifyOtp(request.getMobileNumber(), request.getOtp());
+        String mobile = request.getMobileNumber();
+        if (mobile == null || mobile.isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mobile number is required", null));
+        }
+
+        boolean customerExists = customerRepository.findByMobileNumber(mobile).isPresent();
+        boolean journeyExists = onboardingJourneyRepository.findTopByProspectMobileOrderByCreatedAtDesc(mobile).isPresent();
+
+        if (!customerExists && !journeyExists) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("No registered customer, lead or active booking found for mobile: " + mobile, "CUSTOMER_NOT_FOUND"));
+        }
+
+        boolean isValid = otpService.verifyOtp(mobile, request.getOtp());
         if (!isValid) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Invalid or expired OTP", null));
         }
 
-        String jwt = tokenProvider.generateToken(request.getMobileNumber(), "ROLE_CUSTOMER");
-        Customer customer = customerService.getByMobileNumber(request.getMobileNumber());
-        JourneyTracking tracking = journeyService.getProgress(request.getMobileNumber());
+        String jwt = tokenProvider.generateToken(mobile, "ROLE_CUSTOMER");
+        Customer customer = customerRepository.findByMobileNumber(mobile).orElse(null);
 
         Map<String, Object> responseData = new HashMap<>();
         responseData.put("token", jwt);
         responseData.put("customer", customer);
-        responseData.put("progress", tracking);
 
         return ResponseEntity.ok(ApiResponse.success("OTP verification successful", responseData));
     }
+
 
     @PostMapping("/admin/login")
     public ResponseEntity<ApiResponse<Map<String, Object>>> adminLogin(@RequestBody Map<String, String> payload) {

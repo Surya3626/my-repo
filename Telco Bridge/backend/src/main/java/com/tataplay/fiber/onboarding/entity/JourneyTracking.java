@@ -43,7 +43,7 @@ public class JourneyTracking extends BaseEntity {
     private String draftData; // Serialized JSON payload containing state variables
 
     @Column(name = "last_performed_by_role")
-    private String lastPerformedByRole; // SOC_ADMIN or CUSTOMER
+    private String lastPerformedByRole; // SALES_AGENT or CUSTOMER
 
     @Column(name = "last_performed_by_id")
     private String lastPerformedById; // Admin ID or Customer/Prospect ID

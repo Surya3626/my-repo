@@ -7,7 +7,7 @@ import {
   User, FileText, Settings, Compass, Phone, Star, Gauge, MapPin,
   Zap, CreditCard, ArrowUpRight, CheckCircle2, ShieldCheck, Download,
   Clock, PauseCircle, HelpCircle, AlertTriangle, RefreshCw, ChevronRight, ChevronLeft,
-  Tv, Sparkles, Wifi, Activity, Search, CheckSquare, SendHorizontal, Smartphone, UserCheck
+  Tv, Sparkles, Wifi, Activity, Search, CheckSquare, SendHorizontal, Smartphone, UserCheck, Folder
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { EngineerTrackingMap } from '../components/features/EngineerTrackingMap';
@@ -15,6 +15,8 @@ import { SpeedTestWidget } from '../components/features/SpeedTestWidget';
 import { JourneyTimeline } from '../components/features/JourneyTimeline';
 import { InvoiceDrawer } from '../components/features/InvoiceDrawer';
 import { RechargeModal } from '../components/features/RechargeModal';
+import { SmartMapAddressPicker, AddressData } from '../components/features/SmartMapAddressPicker';
+import { CustomerDocumentVault } from '../components/features/CustomerDocumentVault';
 
 export const SelfCarePortal: React.FC = () => {
   const { toast } = useToast();
@@ -40,7 +42,7 @@ export const SelfCarePortal: React.FC = () => {
   }, [otpSent, authTimer]);
 
   // Dashboard content states
-  const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'billing' | 'tickets' | 'relocation' | 'service_requests' | 'actions' | 'recharge' | 'engineer' | 'support'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'billing' | 'tickets' | 'relocation' | 'service_requests' | 'actions' | 'recharge' | 'engineer' | 'support' | 'documents'>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
@@ -257,6 +259,16 @@ export const SelfCarePortal: React.FC = () => {
       login(fallbackToken, fallbackCust);
       toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
     }
+  };
+
+  const handleRelocAddressChange = (data: AddressData) => {
+    if (data.houseNumber) setRelocFlatNo(data.houseNumber);
+    if (data.society) setRelocBuilding(data.society);
+    if (data.addressLine1 || data.street) setRelocStreet(data.street || data.addressLine1);
+    if (data.area) setRelocArea(data.area);
+    if (data.city) setRelocCity(data.city);
+    if (data.state) setRelocState(data.state);
+    if (data.pincode) setRelocPincode(data.pincode);
   };
 
   const handleRelocation = async (e: React.FormEvent) => {
@@ -662,6 +674,7 @@ export const SelfCarePortal: React.FC = () => {
                 { id: 'overview', label: 'Customer Dashboard', icon: Gauge, badge: 'LIVE' },
                 { id: 'plans', label: 'Broadband Plans', icon: Sparkles, badge: '300 Mbps' },
                 { id: 'billing', label: 'Bills & Invoices', icon: FileText, action: loadPayments, badge: null },
+                { id: 'documents', label: 'My Documents & Vault', icon: Folder, badge: 'VAULT' },
                 { id: 'tickets', label: 'Track Ticket Status', icon: Activity, action: loadCustomerTickets, badge: 'TRACK' },
                 { id: 'relocation', label: 'Relocation Request', icon: MapPin, badge: 'SHIFT' },
                 { id: 'service_requests', label: 'Service Requests', icon: Settings, badge: null },
@@ -1289,136 +1302,22 @@ export const SelfCarePortal: React.FC = () => {
                   )}
 
                   <form onSubmit={handleRelocation} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-extrabold">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Flat / House / Door No.</label>
-                        <input
-                          type="text"
-                          required
-                          value={relocFlatNo}
-                          onChange={(e) => setRelocFlatNo(e.target.value)}
-                          placeholder="e.g. Flat 402, Tower B"
-                          className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Building / Society Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={relocBuilding}
-                          onChange={(e) => setRelocBuilding(e.target.value)}
-                          placeholder="e.g. Royal Palms Apartments"
-                          className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5 md:col-span-2">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Street Address / Line 1</label>
-                        <input
-                          type="text"
-                          required
-                          value={relocStreet}
-                          onChange={(e) => setRelocStreet(e.target.value)}
-                          placeholder="e.g. S.G. Highway, Near ISKCON Temple Crossroads"
-                          className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Area / Locality / Landmark</label>
-                        <input
-                          type="text"
-                          required
-                          value={relocArea}
-                          onChange={(e) => setRelocArea(e.target.value)}
-                          placeholder="e.g. Satellite / Bodakdev"
-                          className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">City &amp; State</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            required
-                            value={relocCity}
-                            onChange={(e) => setRelocCity(e.target.value)}
-                            placeholder="City"
-                            className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-                          />
-                          <input
-                            type="text"
-                            required
-                            value={relocState}
-                            onChange={(e) => setRelocState(e.target.value)}
-                            placeholder="State"
-                            className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Pincode (6-Digits)</label>
-                        <input
-                          type="text"
-                          required
-                          pattern="\d{6}"
-                          maxLength={6}
-                          value={relocPincode}
-                          onChange={(e) => setRelocPincode(e.target.value.replace(/\D/g, ''))}
-                          placeholder="e.g. 380054"
-                          className="w-full clay-input px-4 py-3 font-mono text-xs dark:text-white"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Collapsible Interactive Feasibility Map Preview */}
-                    <div className="space-y-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowRelocMap(!showRelocMap)}
-                        className="w-full p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-600 dark:text-purple-400 font-extrabold text-xs flex items-center justify-between gap-2 hover:bg-purple-500/20 transition shadow-sm"
-                      >
-                        <span className="flex items-center gap-2">
-                          <MapPin size={16} /> {showRelocMap ? 'Hide Feasibility Map Preview' : '🗺️ Click to Preview Interactive Feasibility Map'}
-                        </span>
-                        <span className="clay-badge-purple px-2.5 py-0.5 text-[9px] font-black uppercase shrink-0">
-                          {showRelocMap ? 'ACTIVE MAP' : 'CLICK TO VIEW'}
-                        </span>
-                      </button>
-
-                      {showRelocMap && (
-                        <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-3 animate-fade-in">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                              <MapPin size={16} className="text-purple-600 dark:text-purple-400" /> Feasibility Mini Radar Location
-                            </span>
-                            <span className="clay-badge-emerald px-2.5 py-0.5 text-[9px] font-black uppercase">
-                              ✓ 1 Gbps Fiber Zone Available
-                            </span>
-                          </div>
-
-                          <div className="h-44 rounded-xl bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 border border-purple-500/30 relative overflow-hidden flex items-center justify-center p-4 shadow-inner">
-                            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#8b5cf6_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                            
-                            <div className="relative z-10 text-center space-y-1">
-                              <div className="w-10 h-10 rounded-full bg-purple-600/80 text-white flex items-center justify-center mx-auto shadow-lg animate-bounce border-2 border-white">
-                                <MapPin size={20} />
-                              </div>
-                              <span className="text-[11px] font-extrabold text-white block">
-                                {relocArea || relocCity ? `${relocArea || 'Locality'}, ${relocCity}` : 'Pin relocation target address on radar'}
-                              </span>
-                              <span className="text-[9px] font-mono text-purple-300 block">
-                                LAT: 23.0225° N • LNG: 72.5714° E (Distribution Box: DP-AHM-ZONE04)
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    {/* Real Interactive Satellite Map & Smart Address Picker Component */}
+                    <SmartMapAddressPicker
+                      initialAddress={{
+                        houseNumber: relocFlatNo,
+                        society: relocBuilding,
+                        street: relocStreet,
+                        addressLine1: relocStreet,
+                        area: relocArea,
+                        city: relocCity,
+                        state: relocState,
+                        pincode: relocPincode,
+                        latitude: 23.0225,
+                        longitude: 72.5714,
+                      }}
+                      onChange={handleRelocAddressChange}
+                    />
 
                     <button
                       type="submit"
@@ -1822,6 +1721,11 @@ export const SelfCarePortal: React.FC = () => {
                 </div>
 
               </div>
+            )}
+
+            {/* ─── TAB 11: MY DOCUMENTS & VAULT ───────────────────────────────── */}
+            {activeTab === 'documents' && (
+              <CustomerDocumentVault customer={customer} dashboardData={dashboardData} />
             )}
 
           </div>

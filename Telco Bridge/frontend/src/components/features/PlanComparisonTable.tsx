@@ -6,6 +6,7 @@ interface PlanComparisonTableProps {
   selectedPlanId?: number;
   customerCategory?: 'RETAIL' | 'ENTERPRISE';
   onSelectPlan: (plan: any) => void;
+  onClose?: () => void;
 }
 
 export const PlanComparisonTable: React.FC<PlanComparisonTableProps> = ({
@@ -13,7 +14,9 @@ export const PlanComparisonTable: React.FC<PlanComparisonTableProps> = ({
   selectedPlanId,
   customerCategory = 'RETAIL',
   onSelectPlan,
+  onClose,
 }) => {
+
   const [speedFilter, setSpeedFilter] = useState<number | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [comparedPlanIds, setComparedPlanIds] = useState<number[]>([]);
@@ -73,7 +76,7 @@ export const PlanComparisonTable: React.FC<PlanComparisonTableProps> = ({
     }
   }
 
-  return (
+  const tableContent = (
     <div className="space-y-4 text-left">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
@@ -84,6 +87,7 @@ export const PlanComparisonTable: React.FC<PlanComparisonTableProps> = ({
             Select any 2 plans to trigger locked dual-plan price & feature comparison.
           </span>
         </div>
+
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Search Input */}
@@ -245,4 +249,30 @@ export const PlanComparisonTable: React.FC<PlanComparisonTableProps> = ({
       </div>
     </div>
   );
+
+  if (onClose) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+        <div className="clay-modal p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto space-y-4 relative border-2 border-purple-500/40 shadow-2xl">
+          <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3 className="text-sm font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
+              <Server size={18} className="text-tpf-purple" /> Enterprise Broadband Plan Matrix & Feature Comparison
+            </h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          {tableContent}
+        </div>
+      </div>
+    );
+  }
+
+  return tableContent;
 };
+
+

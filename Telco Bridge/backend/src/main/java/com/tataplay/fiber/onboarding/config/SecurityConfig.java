@@ -64,6 +64,12 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 // Admin routes require ADMIN role
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // Onboarding journey API (prospect self-service or admin)
+                .requestMatchers("/api/onboarding", "/api/onboarding/**").permitAll()
+                // Customer portal endpoints (registration, docs, consent, payment during onboarding)
+                .requestMatchers("/api/customer/**").permitAll()
+                // Address lookup (public — needed before auth)
+                .requestMatchers("/api/address/**").permitAll()
                 // Everything else requires authentication
                 .anyRequest().authenticated()
             )

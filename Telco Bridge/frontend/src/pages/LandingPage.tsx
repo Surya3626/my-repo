@@ -12,6 +12,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { SmartCoverageScanner } from '../components/features/SmartCoverageScanner';
 import { SpeedTestWidget } from '../components/features/SpeedTestWidget';
+import { checkJourneyExists } from '../onboarding/shared/state/journeyApi';
 
 interface BroadbandPlan {
   id: number;
@@ -200,17 +201,29 @@ export const LandingPage: React.FC = () => {
     }
     setResumeLoading(true);
     try {
+      // Pre-check journey existence BEFORE sending OTP
+      const check = await checkJourneyExists(resumeMobile);
+      if (!check.exists) {
+        toast.error(
+          "No Active Booking Found",
+          `We couldn't find an existing onboarding application for +91 ${resumeMobile}. Please start a new application.`
+        );
+        return;
+      }
+
       await api.post('/auth/otp/send', { mobileNumber: resumeMobile });
       setResumeOtpStep('OTP');
       setResumeTimer(60);
       toast.success("Verification OTP Sent!", `6-digit security code dispatched to ${resumeMobile}`);
     } catch (err: any) {
-      setResumeOtpStep('OTP');
-      setResumeTimer(60);
-      toast.info("Verification OTP Sent!", `Security code dispatched to ${resumeMobile}`);
+      toast.error(
+        "No Active Booking Found",
+        err.response?.data?.message || `No existing application found for +91 ${resumeMobile}.`
+      );
     } finally {
       setResumeLoading(false);
     }
+
   };
 
   // 2. Verify OTP & Launch Resumed Wizard
@@ -222,58 +235,35 @@ export const LandingPage: React.FC = () => {
     }
     setResumeLoading(true);
     try {
+      const check = await checkJourneyExists(resumeMobile);
+      if (!check.exists) {
+        toast.error("No Active Booking Found", `No in-progress application found for +91 ${resumeMobile}.`);
+        setShowResumeModal(false);
+        navigate('/onboard/resume');
+        return;
+      }
+
       const response = await api.post('/auth/otp/verify', { mobileNumber: resumeMobile, otp: resumeOtpCode });
       const data = response.data?.data;
-      const newToken = data?.token || 'TOKEN-' + resumeMobile + '-' + Date.now();
-      const newCust = data?.customer || {
-        id: Date.now(),
-        customerId: 'TPF-CUST-' + resumeMobile.slice(-4),
-        accountNumber: 'ACC-' + resumeMobile,
-        connectionId: 'CONN-' + resumeMobile,
-        firstName: 'Subscriber',
-        lastName: '',
-        mobileNumber: resumeMobile,
-        email: `${resumeMobile}@telcobridge.com`,
-        status: 'ACTIVE'
-      };
-      
+      const newToken = data?.token || 'TOKEN-' + resumeMobile;
+      const newCust = data?.customer || { mobileNumber: resumeMobile, firstName: 'Subscriber' };
+
       login(newToken, newCust);
       localStorage.setItem('tpf_resume_mobile', resumeMobile);
       toast.success("OTP Verified!", "Restoring saved onboarding draft session...");
       setShowResumeModal(false);
       navigate('/onboard', {
         state: {
-          customerMobile: resumeMobile,
-          resume: true
+          resumeMobile: resumeMobile,
         }
       });
     } catch (err: any) {
-      const newToken = 'TOKEN-' + resumeMobile + '-' + Date.now();
-      const newCust = {
-        id: Date.now(),
-        customerId: 'TPF-CUST-' + resumeMobile.slice(-4),
-        accountNumber: 'ACC-' + resumeMobile,
-        connectionId: 'CONN-' + resumeMobile,
-        firstName: 'Subscriber',
-        lastName: '',
-        mobileNumber: resumeMobile,
-        email: `${resumeMobile}@telcobridge.com`,
-        status: 'ACTIVE'
-      };
-      login(newToken, newCust);
-      localStorage.setItem('tpf_resume_mobile', resumeMobile);
-      toast.success("OTP Verified!", "Restoring saved onboarding draft session...");
-      setShowResumeModal(false);
-      navigate('/onboard', {
-        state: {
-          customerMobile: resumeMobile,
-          resume: true
-        }
-      });
+      toast.error("Verification Error", err.response?.data?.message || "OTP verification failed.");
     } finally {
       setResumeLoading(false);
     }
   };
+
 
   // Filter display plans by Category
   const displayedPlans = plans.filter(p => {

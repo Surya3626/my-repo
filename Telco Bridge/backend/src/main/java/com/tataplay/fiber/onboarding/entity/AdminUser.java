@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * AdminUser entity storing SOC Admin credentials, roles, and assigned cities (Geo-Tagging RBAC).
+ * AdminUser entity storing Sales Agent credentials, roles, and assigned cities (Geo-Tagging RBAC).
  * Supports multi-city assignment per admin user.
  */
 @Entity

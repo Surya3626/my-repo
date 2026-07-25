@@ -53,6 +53,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isAdminMode:
     adminMode?: boolean; 
     adminId?: string; 
     customerMobile?: string; 
+    fresh?: boolean;
     prospectData?: any 
   } | null;
   const { login, logout, token, customer, updateCustomer } = useAuth();
@@ -286,6 +287,66 @@ const DEFAULT_FALLBACK_PLANS = [
     dnd: true
   });
 
+  // Non-backable lock after Customer Consent page (Step 8 completed / verified or Step >= 9)
+  const isAfterConsent = currentStep > 8 || consentVerified;
+
+  // Dispatch step change for AI Chatbot Journey Co-Pilot
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('tpf_step_change', { detail: { step: currentStep } }));
+  }, [currentStep]);
+
+  // Listen to AI Chatbot Action Triggers
+  useEffect(() => {
+    const handleBotAction = (e: any) => {
+      const { action, payload } = e.detail || {};
+      if (action === 'NAVIGATE_STEP' && payload) {
+        const targetStep = parseInt(payload, 10);
+        if (!isNaN(targetStep) && targetStep >= 1 && targetStep <= 10) {
+          if (!isAfterConsent || targetStep >= 9) {
+            setCurrentStep(targetStep);
+          }
+        }
+      } else if (action === 'AUTOFILL') {
+        if (payload === 'PIN_400001' || payload === 'DEMO_ADDRESS') {
+          setPincode('400001');
+          setSociety('Tower B, Horizon Palms');
+          setArea('Lower Parel West');
+          setCity('Mumbai');
+          setState('Maharashtra');
+          setLocationFeasible(true);
+        }
+      } else if (action === 'SELECT_PLAN') {
+        if (payload === '300_MBPS' && DEFAULT_FALLBACK_PLANS[3]) {
+          setSelectedPlan(DEFAULT_FALLBACK_PLANS[3]);
+        } else if (payload === '100_MBPS' && DEFAULT_FALLBACK_PLANS[1]) {
+          setSelectedPlan(DEFAULT_FALLBACK_PLANS[1]);
+        }
+      } else if (action === 'APPLY_COUPON') {
+        setCouponCodeInput('WELCOME100');
+        setCouponApplied(true);
+        setCouponDiscount(100);
+      }
+    };
+
+    window.addEventListener('tpf_bot_action', handleBotAction);
+    return () => window.removeEventListener('tpf_bot_action', handleBotAction);
+  }, [isAfterConsent]);
+
+  useEffect(() => {
+    if (isAfterConsent) {
+      window.history.pushState(null, '', window.location.href);
+      const handlePopState = () => {
+        window.history.pushState(null, '', window.location.href);
+        toast.warning(
+          "Order Sealed & Locked",
+          "Navigation to previous steps is disabled after Customer Consent authorization."
+        );
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, [currentStep, consentVerified, isAfterConsent]);
+
   // CAF state
   const [cafFile, setCafFile] = useState<any>(null);
 
@@ -478,6 +539,16 @@ const DEFAULT_FALLBACK_PLANS = [
     const fetchJourney = async () => {
       // 1. Direct Admin or Verified Customer Resume (OTP already verified on Home Page / Admin Portal)
       if (isAdminMode || customerMobileFromState) {
+        if (locationState?.fresh) {
+          localStorage.removeItem('tpf_local_journey_step');
+          localStorage.removeItem('tpf_local_journey_draft');
+          localStorage.removeItem('tpf_local_journey_history');
+          setCurrentStep(1);
+          setIsResumeMode(false);
+          toast.info("Fresh Onboarding Session", "Started clean subscriber onboarding wizard.");
+          return;
+        }
+
         const targetMobile = customerMobileFromState || mobileNumber || localStorage.getItem('tpf_resume_mobile');
         if (targetMobile) {
           try {
@@ -531,16 +602,30 @@ const DEFAULT_FALLBACK_PLANS = [
             }
           } catch (apiErr) {}
 
-          // Fallback to local storage backup
+          // Fallback to local storage backup only if mobile number matches active customer
           const localStep = localStorage.getItem('tpf_local_journey_step');
           const localDraft = localStorage.getItem('tpf_local_journey_draft');
           const localHistory = localStorage.getItem('tpf_local_journey_history');
           if (localDraft && localStep) {
-            restoreJourney({
-              currentStep: parseInt(localStep, 10),
-              draftData: localDraft,
-              stepHistoryJson: localHistory
-            });
+            try {
+              const parsedDraft = JSON.parse(localDraft);
+              const activeMobile = customer?.mobileNumber || mobileNumber || customerMobileFromState;
+              if (parsedDraft.mobileNumber && activeMobile && parsedDraft.mobileNumber === activeMobile) {
+                restoreJourney({
+                  currentStep: parseInt(localStep, 10),
+                  draftData: localDraft,
+                  stepHistoryJson: localHistory
+                });
+              } else {
+                // Stale local draft from another customer session — clear it!
+                localStorage.removeItem('tpf_local_journey_step');
+                localStorage.removeItem('tpf_local_journey_draft');
+                localStorage.removeItem('tpf_local_journey_history');
+                setCurrentStep(4);
+              }
+            } catch (pErr) {
+              setCurrentStep(4);
+            }
           } else {
             setCurrentStep(4);
           }
@@ -549,11 +634,24 @@ const DEFAULT_FALLBACK_PLANS = [
           const localDraft = localStorage.getItem('tpf_local_journey_draft');
           const localHistory = localStorage.getItem('tpf_local_journey_history');
           if (localDraft && localStep) {
-            restoreJourney({
-              currentStep: parseInt(localStep, 10),
-              draftData: localDraft,
-              stepHistoryJson: localHistory
-            });
+            try {
+              const parsedDraft = JSON.parse(localDraft);
+              const activeMobile = customer?.mobileNumber || mobileNumber || customerMobileFromState;
+              if (parsedDraft.mobileNumber && activeMobile && parsedDraft.mobileNumber === activeMobile) {
+                restoreJourney({
+                  currentStep: parseInt(localStep, 10),
+                  draftData: localDraft,
+                  stepHistoryJson: localHistory
+                });
+              } else {
+                localStorage.removeItem('tpf_local_journey_step');
+                localStorage.removeItem('tpf_local_journey_draft');
+                localStorage.removeItem('tpf_local_journey_history');
+                setCurrentStep(4);
+              }
+            } catch (pErr) {
+              setCurrentStep(4);
+            }
           } else {
             setCurrentStep(1);
           }
@@ -561,7 +659,7 @@ const DEFAULT_FALLBACK_PLANS = [
       }
     };
     fetchJourney();
-  }, [token, isAdminMode, customerMobileFromState]);
+  }, [token, isAdminMode, customerMobileFromState, customer]);
 
   // Sync draft / journey restore when user logs in or admin resumes
   const restoreJourney = (progress: any) => {
@@ -907,9 +1005,12 @@ const DEFAULT_FALLBACK_PLANS = [
         }
 
         toast.success("Mobile Verified!", "Session authenticated successfully.");
-        if (data.progress) {
+        if (data.progress && data.progress.currentStep && data.progress.currentStep > 3) {
           restoreJourney(data.progress);
         } else {
+          localStorage.removeItem('tpf_local_journey_step');
+          localStorage.removeItem('tpf_local_journey_draft');
+          localStorage.removeItem('tpf_local_journey_history');
           setCurrentStep(4);
         }
       }
@@ -1676,35 +1777,44 @@ const DEFAULT_FALLBACK_PLANS = [
             {steps.map(step => {
               const isCompleted = currentStep > step.num;
               const isCurrent = currentStep === step.num;
-              
+              const isLockedAfterConsent = isAfterConsent && step.num <= 8;
+
               return (
                 <button
                   key={step.num}
                   type="button"
-                  disabled={!isCompleted}
-                  onClick={() => isCompleted && setCurrentStep(step.num)}
+                  disabled={!isCompleted || isLockedAfterConsent}
+                  onClick={() => {
+                    if (isLockedAfterConsent) {
+                      toast.warning("Order Sealed", "Navigation to previous steps is disabled after Customer Consent authorization.");
+                      return;
+                    }
+                    if (isCompleted) setCurrentStep(step.num);
+                  }}
                   className={`flex flex-col items-center gap-1 group transition ${
-                    isCompleted ? 'cursor-pointer' : 'cursor-default'
+                    isCompleted && !isLockedAfterConsent ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'
                   }`}
-                  title={`${step.label} ${isCompleted ? '(Click to jump)' : ''}`}
+                  title={`${step.label} ${isLockedAfterConsent ? '(Locked - Non-Backable after Customer Consent)' : isCompleted ? '(Click to jump)' : ''}`}
                 >
                   <div
                     className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-xs font-black transition duration-300 ${
                       isCurrent
                         ? 'bg-gradient-to-r from-tpf-purple to-tpf-pink text-white shadow-lg shadow-purple-500/40 ring-4 ring-purple-500/30 scale-110'
                         : isCompleted
-                        ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/40 hover:bg-emerald-200 dark:hover:bg-emerald-500/30'
+                        ? isLockedAfterConsent
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
+                          : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/40 hover:bg-emerald-200 dark:hover:bg-emerald-500/30'
                         : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-800'
                     }`}
                   >
-                    {isCompleted ? <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" /> : step.num}
+                    {isCompleted ? <CheckCircle2 size={14} className={isLockedAfterConsent ? "text-slate-400" : "text-emerald-600 dark:text-emerald-400"} /> : step.num}
                   </div>
                   
                   <span
                     className={`text-[9px] font-bold tracking-tight truncate max-w-full hidden sm:block ${
                       isCurrent
                         ? 'text-purple-700 dark:text-purple-300 font-black'
-                        : isCompleted
+                        : isCompleted && !isLockedAfterConsent
                         ? 'text-slate-800 dark:text-slate-300 group-hover:text-tpf-purple'
                         : 'text-slate-600 dark:text-slate-500'
                     }`}
@@ -5307,13 +5417,10 @@ const DEFAULT_FALLBACK_PLANS = [
 
               {/* Step Navigation Bar */}
               <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(8)}
-                  className="w-full sm:w-auto px-6 py-3.5 clay-button-slate text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2"
-                >
-                  <ChevronLeft size={16} /> Back to Consent
-                </button>
+                <div className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm">
+                  <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+                  <span>🔒 Customer Consent Sealed & Verified (Non-Backable)</span>
+                </div>
 
                 <button
                   type="button"
@@ -5684,14 +5791,11 @@ const DEFAULT_FALLBACK_PLANS = [
                         </button>
                       </div>
 
-                      <div className="pt-3 flex justify-between items-center">
-                        <button
-                          type="button"
-                          onClick={() => setCurrentStep(9)}
-                          className="px-5 py-3.5 clay-button-slate text-xs font-black uppercase tracking-wider flex items-center gap-1.5"
-                        >
-                          <ChevronLeft size={16} /> Back to CAF
-                        </button>
+                      <div className="pt-3 flex justify-between items-center gap-4">
+                        <div className="px-5 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm">
+                          <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+                          <span>🔒 CAF & Consent Sealed (Non-Backable)</span>
+                        </div>
 
                         <button
                           type="submit"

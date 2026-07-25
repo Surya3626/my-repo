@@ -28,6 +28,7 @@ public class AdminController {
     private final AdminUserRepository adminUserRepository;
     private final CityMasterRepository cityMasterRepository;
     private final AddressRepository addressRepository;
+    private final AuditLogRepository auditLogRepository;
     private final DocumentService documentService;
     private final AuditService auditService;
     private final JourneyService journeyService;
@@ -172,9 +173,9 @@ public class AdminController {
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam(required = false, defaultValue = "admin") String adminId) {
 
-        List<Document> docs = documentService.uploadDocuments(mobileNumber, docType, docNumber, files, "SOC_ADMIN");
-        auditService.log("ADMIN_BATCH_DOC_UPLOAD",
-                "SOC Admin [" + adminId + "] uploaded " + docs.size() + " document(s) for customer: " + mobileNumber,
+        List<Document> docs = documentService.uploadDocuments(mobileNumber, docType, docNumber, files, "SALES_AGENT");
+        auditService.log("AGENT_BATCH_DOC_UPLOAD",
+                "Sales Agent [" + adminId + "] uploaded " + docs.size() + " document(s) for customer: " + mobileNumber,
                 mobileNumber);
         return ResponseEntity.ok(ApiResponse.success(docs.size() + " document(s) uploaded successfully", docs));
     }
@@ -191,8 +192,8 @@ public class AdminController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Mobile number and base64 image required", null));
         }
 
-        Document doc = documentService.saveWebcamSelfie(mobileNumber, base64Data, "SOC_ADMIN");
-        auditService.log("ADMIN_LIVE_CAPTURE", "SOC Admin [" + adminId + "] captured live photo for " + mobileNumber, mobileNumber);
+        Document doc = documentService.saveWebcamSelfie(mobileNumber, base64Data, "SALES_AGENT");
+        auditService.log("AGENT_LIVE_CAPTURE", "Sales Agent [" + adminId + "] captured live photo for " + mobileNumber, mobileNumber);
         return ResponseEntity.ok(ApiResponse.success("Live camera capture saved successfully", doc));
     }
 
@@ -218,10 +219,10 @@ public class AdminController {
                 mobileNumber, "/onboard", 1, "{}",
                 "ADMIN-SESSION-" + System.currentTimeMillis(),
                 "Admin Portal Desktop", "Desktop", "127.0.0.1",
-                "SOC_ADMIN", adminId, "SOC Admin (" + adminId + ")", null);
+                "SALES_AGENT", adminId, "Sales Agent (" + adminId + ")", null);
 
-        auditService.log("SOC_ADMIN_ONBOARD_INITIATED",
-                "SOC Admin [" + adminId + "] initiated onboarding for customer: " + mobileNumber,
+        auditService.log("SALES_AGENT_ONBOARD_INITIATED",
+                "Sales Agent [" + adminId + "] initiated onboarding for customer: " + mobileNumber,
                 mobileNumber);
 
         return ResponseEntity.ok(ApiResponse.success("Onboarding session initiated for customer: " + mobileNumber, customer));
@@ -245,11 +246,11 @@ public class AdminController {
         JourneyTracking tracking = journeyService.saveProgressWithActor(
                 mobileNumber, page, step, draftData,
                 "ADMIN-SESSION-" + System.currentTimeMillis(),
-                "SOC Admin Portal", "Desktop", "127.0.0.1",
-                "SOC_ADMIN", adminId, "SOC Admin (" + adminId + ")",
+                "SALES_AGENT Portal", "Desktop", "127.0.0.1",
+                "SALES_AGENT", adminId, "Sales Agent (" + adminId + ")",
                 stepHistoryJson);
 
-        return ResponseEntity.ok(ApiResponse.success("Customer journey saved on behalf of customer by SOC Admin", tracking));
+        return ResponseEntity.ok(ApiResponse.success("Customer journey saved on behalf of customer by Sales Agent", tracking));
     }
 
     // ─── Dual OTP Consent ──────────────────────────────────────────────────────
@@ -274,12 +275,12 @@ public class AdminController {
         boolean adminValid = "123456".equals(adminOtp) || (adminOtp != null && adminOtp.length() == 6);
         boolean custValid = "123456".equals(customerOtp) || otpService.verifyOtp(mobileNumber, customerOtp);
 
-        if (!adminValid) return ResponseEntity.badRequest().body(ApiResponse.error("Invalid SOC Admin Authorization OTP", null));
+        if (!adminValid) return ResponseEntity.badRequest().body(ApiResponse.error("Invalid Sales Agent Authorization OTP", null));
         if (!custValid) return ResponseEntity.badRequest().body(ApiResponse.error("Invalid Customer Verification OTP", null));
 
         Map<String, Object> response = new HashMap<>();
         response.put("verified", true);
-        response.put("message", "Dual OTP consent verified successfully by SOC Admin [" + adminId + "]");
+        response.put("message", "Dual OTP consent verified successfully by Sales Agent [" + adminId + "]");
         return ResponseEntity.ok(ApiResponse.success("Dual OTP consent verified", response));
     }
 
@@ -444,5 +445,59 @@ public class AdminController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=tataplay_fiber_customers.csv")
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(bytes);
+    }
+
+    // ─── Audit Logs Feed ───────────────────────────────────────────────────────
+
+    /**
+     * Returns the latest system audit logs for the admin portal log viewer.
+     * Replaces the hardcoded demoAuditLogs array in the frontend.
+     */
+    @GetMapping("/audit-logs")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getAuditLogs(
+            @RequestParam(required = false, defaultValue = "100") int limit) {
+
+        List<com.tataplay.fiber.onboarding.entity.AuditLog> logs = auditLogRepository.findFirst100ByOrderByTimestampDesc();
+        List<Map<String, Object>> result = logs.stream().map(log -> {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("id", "LOG-" + log.getId());
+            m.put("action", log.getAction());
+            m.put("actor", log.getActor());
+            m.put("ipAddress", log.getIpAddress() != null ? log.getIpAddress() : "N/A");
+            m.put("description", log.getDescription());
+            m.put("correlationId", log.getCorrelationId() != null ? log.getCorrelationId() : "");
+            m.put("timestamp", log.getTimestamp());
+            return m;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.success("Audit logs retrieved", result));
+    }
+
+    // ─── RFS (Ready-For-Service) Requests ─────────────────────────────────────
+
+    /**
+     * Returns GIS Ready-For-Service enablement requests submitted by agents.
+     * These are stored as audit log entries with action = 'GIS_RFS_REQUESTED'.
+     * Replaces the hardcoded rfsRequests array in the frontend.
+     */
+    @GetMapping("/rfs-requests")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getRfsRequests() {
+        List<com.tataplay.fiber.onboarding.entity.AuditLog> logs = auditLogRepository.findByActorOrderByTimestampDesc("GIS_RFS_REQUESTED");
+        // Also include any logs where action starts with GIS_RFS
+        List<com.tataplay.fiber.onboarding.entity.AuditLog> allLogs = auditLogRepository.findFirst100ByOrderByTimestampDesc();
+        List<Map<String, Object>> result = allLogs.stream()
+                .filter(l -> l.getAction() != null && l.getAction().startsWith("GIS_RFS"))
+                .map(l -> {
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("id", "GIS-RFS-" + l.getId());
+                    m.put("action", l.getAction());
+                    m.put("actor", l.getActor());
+                    m.put("description", l.getDescription());
+                    m.put("status", "PENDING");
+                    m.put("timestamp", l.getTimestamp());
+                    return m;
+                }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.success("RFS requests retrieved", result));
     }
 }

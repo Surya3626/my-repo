@@ -262,65 +262,91 @@ export const SmartMapAddressPicker: React.FC<SmartMapAddressPickerProps> = ({
     if (typeof window !== 'undefined' && window.L) {
       const L = window.L;
 
-      if (!leafletMapRef.current) {
-        const map = L.map(mapContainerRef.current, {
-          center: [latitude, longitude],
-          zoom: 15,
-          zoomControl: true,
-        });
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors | TelcoBridge GIS',
-          maxZoom: 19,
-        }).addTo(map);
-
-        const customIcon = L.divIcon({
-          className: 'custom-leaflet-marker',
-          html: `
-            <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
-              <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(219,39,119,0.3); animation: pulse-radar 2s infinite;"></div>
-              <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #6d28d9, #db2777); border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white;">
-                📍
-              </div>
-            </div>
-          `,
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
-        });
-
-        const marker = L.marker([latitude, longitude], {
-          draggable: true,
-          icon: customIcon,
-        }).addTo(map);
-
-        marker.on('dragend', (e: any) => {
-          const pos = e.target.getLatLng();
-          const newLat = Number(pos.lat.toFixed(5));
-          const newLng = Number(pos.lng.toFixed(5));
-          setLatitude(newLat);
-          setLongitude(newLng);
-          reverseGeocode(newLat, newLng);
-        });
-
-        map.on('click', (e: any) => {
-          const newLat = Number(e.latlng.lat.toFixed(5));
-          const newLng = Number(e.latlng.lng.toFixed(5));
-          setLatitude(newLat);
-          setLongitude(newLng);
-          marker.setLatLng([newLat, newLng]);
-          reverseGeocode(newLat, newLng);
-        });
-
-        leafletMapRef.current = map;
-        leafletMarkerRef.current = marker;
-      } else {
-        leafletMapRef.current.setView([latitude, longitude], leafletMapRef.current.getZoom());
-        if (leafletMarkerRef.current) {
-          leafletMarkerRef.current.setLatLng([latitude, longitude]);
-        }
+      if (leafletMapRef.current) {
+        try {
+          leafletMapRef.current.remove();
+        } catch (e) {}
+        leafletMapRef.current = null;
+        leafletMarkerRef.current = null;
       }
+
+      const map = L.map(mapContainerRef.current, {
+        center: [latitude, longitude],
+        zoom: 15,
+        zoomControl: true,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors | TelcoBridge GIS',
+        maxZoom: 19,
+      }).addTo(map);
+
+      const customIcon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+          <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(219,39,119,0.3); animation: pulse-radar 2s infinite;"></div>
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #6d28d9, #db2777); border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white;">
+              📍
+            </div>
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      });
+
+      const marker = L.marker([latitude, longitude], {
+        draggable: true,
+        icon: customIcon,
+      }).addTo(map);
+
+      marker.on('dragend', (e: any) => {
+        const pos = e.target.getLatLng();
+        const newLat = Number(pos.lat.toFixed(5));
+        const newLng = Number(pos.lng.toFixed(5));
+        setLatitude(newLat);
+        setLongitude(newLng);
+        reverseGeocode(newLat, newLng);
+      });
+
+      map.on('click', (e: any) => {
+        const newLat = Number(e.latlng.lat.toFixed(5));
+        const newLng = Number(e.latlng.lng.toFixed(5));
+        setLatitude(newLat);
+        setLongitude(newLng);
+        marker.setLatLng([newLat, newLng]);
+        reverseGeocode(newLat, newLng);
+      });
+
+      leafletMapRef.current = map;
+      leafletMarkerRef.current = marker;
+
+      const timer = setTimeout(() => {
+        if (leafletMapRef.current) {
+          leafletMapRef.current.invalidateSize();
+        }
+      }, 250);
+
+      return () => {
+        clearTimeout(timer);
+        if (leafletMapRef.current) {
+          try {
+            leafletMapRef.current.remove();
+          } catch (e) {}
+          leafletMapRef.current = null;
+          leafletMarkerRef.current = null;
+        }
+      };
     }
-  }, [preferredMode, latitude, longitude]);
+  }, [preferredMode]);
+
+  // Sync leaflet map view when latitude / longitude changes externally
+  useEffect(() => {
+    if (preferredMode === 'MAP' && leafletMapRef.current && leafletMarkerRef.current) {
+      leafletMapRef.current.setView([latitude, longitude], leafletMapRef.current.getZoom());
+      leafletMarkerRef.current.setLatLng([latitude, longitude]);
+    }
+  }, [latitude, longitude, preferredMode]);
 
   const selectSearchResult = (item: {
     displayName: string;

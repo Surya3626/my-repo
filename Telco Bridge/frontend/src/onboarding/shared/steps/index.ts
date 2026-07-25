@@ -1,0 +1,9 @@
+export { FeasibilityCheckStep } from './FeasibilityCheckStep/index';
+export { CustomerDetailsStep } from './CustomerDetailsStep/index';
+export { DocumentCollectionStep } from './DocumentCollectionStep/index';
+export { BuildProfileStep } from './BuildProfileStep/index';
+export { PlansAddonsCouponsStep } from './PlansAddonsCouponsStep/index';
+export { PaymentStep } from './PaymentStep/index';
+export { CustomerConsentStep } from './CustomerConsentStep/index';
+export { CafGenerationStep } from './CafGenerationStep/index';
+export { EkycInitiationStep } from './EkycInitiationStep/index';

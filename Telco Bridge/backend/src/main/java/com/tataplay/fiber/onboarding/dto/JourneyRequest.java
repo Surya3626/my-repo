@@ -21,7 +21,7 @@ public class JourneyRequest {
 
     private String mobileNumber;
 
-    private String performedByRole; // SOC_ADMIN or CUSTOMER
+    private String performedByRole; // SALES_AGENT or CUSTOMER
 
     private String performedById; // e.g. admin or prospectId
 

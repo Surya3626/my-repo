@@ -33,6 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
   
   const [customer, setCustomer] = useState<CustomerType | null>(() => {
+    const activeToken = localStorage.getItem('tpf_token') || localStorage.getItem('tpf_login_token');
+    if (!activeToken) return null;
+
     const cached = localStorage.getItem('tpf_customer');
     if (cached) {
       try { return JSON.parse(cached); } catch (e) {}
@@ -73,10 +76,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('tpf_login_token');
     localStorage.removeItem('tpf_customer');
     localStorage.removeItem('tpf_resume_mobile');
+    localStorage.removeItem('tpf_mobile');
     localStorage.removeItem('tpf_login_time');
     localStorage.removeItem('tpf_journey_step');
     localStorage.removeItem('tpf_journey_data');
   };
+
 
   const updateCustomer = (updated: CustomerType) => {
     setCustomer(updated);

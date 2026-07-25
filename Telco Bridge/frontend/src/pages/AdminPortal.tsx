@@ -37,7 +37,7 @@ export const AdminPortal: React.FC = () => {
     { id: 1, username: 'mumbai_admin', fullName: 'Rajesh Sharma', email: 'rajesh.sharma@telcobridge.com', isGlobalAdmin: false, assignedCities: ['Mumbai', 'Navi Mumbai', 'Thane'] },
     { id: 2, username: 'pune_admin', fullName: 'Anil Deshmukh', email: 'anil.deshmukh@telcobridge.com', isGlobalAdmin: false, assignedCities: ['Pune'] },
     { id: 3, username: 'blore_admin', fullName: 'Kavita Reddy', email: 'kavita.reddy@telcobridge.com', isGlobalAdmin: false, assignedCities: ['Bengaluru'] },
-    { id: 4, username: 'admin', fullName: 'Global SOC Lead', email: 'admin@telcobridge.com', isGlobalAdmin: true, assignedCities: ['ALL'] }
+    { id: 4, username: 'admin', fullName: 'Global Sales Lead', email: 'admin@telcobridge.com', isGlobalAdmin: true, assignedCities: ['ALL'] }
   ]);
   const [citySearchQueries, setCitySearchQueries] = useState<Record<string, string>>({});
   const [draftUserCities, setDraftUserCities] = useState<Record<string, string[]>>({});
@@ -299,6 +299,18 @@ export const AdminPortal: React.FC = () => {
     });
   };
 
+  const handleStartFreshOnboarding = () => {
+    localStorage.removeItem('tpf_local_journey_step');
+    localStorage.removeItem('tpf_local_journey_draft');
+    localStorage.removeItem('tpf_local_journey_history');
+    navigate('/admin/onboard', {
+      state: {
+        adminId: adminUsername || 'admin',
+        fresh: true
+      }
+    });
+  };
+
   const handleGenerateMagicLink = async (cust: any) => {
     const mobile = cust.mobileNumber;
     const email = cust.email || `${mobile}@telcobridge.com`;
@@ -440,12 +452,12 @@ export const AdminPortal: React.FC = () => {
   const myRfsRequests = rfsRequests.filter(req => !req.createdBy || req.createdBy === currentAdminUser);
 
   // Default Stats fallback for display demo
-  const displayStats = stats || {
-    totalCustomers: displayCustomersList.length || 1248,
-    pendingKyc: 14,
-    paymentSuccessRate: 98.4,
-    totalRevenue: 1248900,
-    dropOffFunnel: {
+  const displayStats = {
+    totalCustomers: (stats && stats.totalCustomers) ? stats.totalCustomers : 1248,
+    pendingKyc: (stats && stats.pendingKyc) ? stats.pendingKyc : 14,
+    paymentSuccessRate: (stats && typeof stats.paymentSuccessRate === 'number') ? stats.paymentSuccessRate : 98.4,
+    totalRevenue: (stats && stats.totalRevenue) ? stats.totalRevenue : 1248900,
+    dropOffFunnel: (stats && stats.dropOffFunnel) ? stats.dropOffFunnel : {
       FEASIBILITY_CHECK: 1248,
       MOBILE_VERIFIED: 1180,
       PLAN_SELECTED: 1040,
@@ -454,7 +466,7 @@ export const AdminPortal: React.FC = () => {
       EKYC_VERIFIED: 920,
       INSTALLED: 890
     },
-    popularPlans: {
+    popularPlans: (stats && stats.popularPlans) ? stats.popularPlans : {
       'Tata Play Fiber 500 Mbps Ultra': 520,
       'Tata Play Fiber 300 Mbps High-Speed': 410,
       'Tata Play Fiber 1 Gbps GigaSpeed': 250,
@@ -670,11 +682,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => {
-                toast.info("Direct Feasibility Launch", "Navigating to Step 1 Address Feasibility Check...");
-                navigate('/admin/onboard', { state: { adminId: adminUsername || 'admin' } });
-              }}
-              className="px-4 py-2.5 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center gap-2 shrink-0 shadow-lg"
+              onClick={handleStartFreshOnboarding}
+              className="px-4 py-2.5 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center gap-2 shrink-0 shadow-lg hover:scale-105 transition"
             >
               <UserPlus size={15} /> + Initiate Flow
             </button>
@@ -706,63 +715,79 @@ export const AdminPortal: React.FC = () => {
           {!loading && adminTab === 'kpis' && (
             <div className="space-y-8 animate-fade-in text-left">
               {/* Top 4 Claymorphic KPI Stat Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="clay-card border-2 border-purple-500/30 p-6 space-y-3 relative overflow-hidden shadow-2xl shadow-purple-500/10 rounded-3xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Subscriptions</span>
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/30">
-                      <Users size={20} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                <div className="clay-card border-2 border-purple-500/30 p-5 space-y-3 relative overflow-hidden shadow-2xl shadow-purple-500/10 rounded-3xl backdrop-blur-xl bg-white/90 dark:bg-slate-900/90">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block leading-tight">
+                      Total Subscriptions
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-500/30 shrink-0">
+                      <Users size={18} />
                     </div>
                   </div>
                   <div>
-                    <span className="text-3xl font-black text-slate-900 dark:text-white block">{displayStats.totalCustomers}</span>
+                    <span className="text-2xl xl:text-3xl font-black text-slate-900 dark:text-white block tracking-tight truncate">
+                      {displayStats.totalCustomers.toLocaleString('en-IN')}
+                    </span>
                     <span className="text-[10px] font-extrabold text-emerald-500 flex items-center gap-1 mt-1">
-                      <ArrowUpRight size={14} /> +14.2% MoM Onboarding Growth
+                      <ArrowUpRight size={14} /> +14.2% MoM Growth
                     </span>
                   </div>
                 </div>
 
-                <div className="clay-card border-2 border-purple-500/30 p-6 space-y-3 relative overflow-hidden shadow-2xl shadow-purple-500/10 rounded-3xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">KYC Approvals Queue</span>
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/30">
-                      <FileCheck size={20} />
+                <div className="clay-card border-2 border-purple-500/30 p-5 space-y-3 relative overflow-hidden shadow-2xl shadow-purple-500/10 rounded-3xl backdrop-blur-xl bg-white/90 dark:bg-slate-900/90">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block leading-tight">
+                      KYC Approvals Queue
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-500/30 shrink-0">
+                      <FileCheck size={18} />
                     </div>
                   </div>
                   <div>
-                    <span className="text-3xl font-black text-slate-900 dark:text-white block">{displayStats.pendingKyc}</span>
+                    <span className="text-2xl xl:text-3xl font-black text-slate-900 dark:text-white block tracking-tight truncate">
+                      {displayStats.pendingKyc}
+                    </span>
                     <span className="text-[10px] font-extrabold text-amber-500 flex items-center gap-1 mt-1">
-                      <Clock size={14} /> Average Turnaround: 4.2 mins
+                      <Clock size={14} /> Turnaround: 4.2 mins
                     </span>
                   </div>
                 </div>
 
-                <div className="clay-card border-2 border-purple-500/30 p-6 space-y-3 relative overflow-hidden shadow-2xl shadow-purple-500/10 rounded-3xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Payment Conversion</span>
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/30">
-                      <BarChart3 size={20} />
+                <div className="clay-card border-2 border-purple-500/30 p-5 space-y-3 relative overflow-hidden shadow-2xl shadow-purple-500/10 rounded-3xl backdrop-blur-xl bg-white/90 dark:bg-slate-900/90">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block leading-tight">
+                      Payment Conversion
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-500/30 shrink-0">
+                      <BarChart3 size={18} />
                     </div>
                   </div>
                   <div>
-                    <span className="text-3xl font-black text-slate-900 dark:text-white block">{displayStats.paymentSuccessRate.toFixed(1)}%</span>
+                    <span className="text-2xl xl:text-3xl font-black text-slate-900 dark:text-white block tracking-tight truncate">
+                      {displayStats.paymentSuccessRate.toFixed(1)}%
+                    </span>
                     <span className="text-[10px] font-extrabold text-emerald-500 flex items-center gap-1 mt-1">
                       <CheckCircle2 size={14} /> Zero Checkout Drop-offs
                     </span>
                   </div>
                 </div>
 
-                <div className="clay-card border-2 border-purple-500/30 p-6 space-y-3 relative overflow-hidden shadow-2xl shadow-purple-500/10 rounded-3xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Monthly Revenue</span>
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/30">
-                      <Landmark size={20} />
+                <div className="clay-card border-2 border-purple-500/30 p-5 space-y-3 relative overflow-hidden shadow-2xl shadow-purple-500/10 rounded-3xl backdrop-blur-xl bg-white/90 dark:bg-slate-900/90">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block leading-tight">
+                      Total Monthly Revenue
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-500/30 shrink-0">
+                      <Landmark size={18} />
                     </div>
                   </div>
                   <div>
-                    <span className="text-3xl font-black text-slate-900 dark:text-white block">₹{displayStats.totalRevenue.toLocaleString('en-IN')}</span>
+                    <span className="text-2xl xl:text-3xl font-black text-slate-900 dark:text-white block tracking-tight truncate">
+                      ₹{displayStats.totalRevenue.toLocaleString('en-IN')}
+                    </span>
                     <span className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 flex items-center gap-1 mt-1">
-                      <Zap size={14} /> ARPU: ₹999.00 / Subscriber
+                      <Zap size={14} /> ARPU: ₹999.00 / Sub
                     </span>
                   </div>
                 </div>
@@ -885,6 +910,13 @@ export const AdminPortal: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleStartFreshOnboarding}
+                    className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-purple-500/20 hover:scale-105 transition"
+                  >
+                    <Plus size={16} /> Start New Customer Onboarding
+                  </button>
                   <button
                     type="button"
                     onClick={handleExportCsv}

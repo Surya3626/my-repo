@@ -42,7 +42,7 @@ public class Document extends BaseEntity {
     private String verificationStatus; // PENDING, APPROVED, REJECTED
 
     @Column(name = "uploaded_by_role")
-    private String uploadedByRole; // CUSTOMER or SOC_ADMIN
+    private String uploadedByRole; // CUSTOMER or SALES_AGENT
 
     @Column(name = "ocr_metadata", length = 1000)
     private String ocrMetadata; // Extracted OCR content placeholder
