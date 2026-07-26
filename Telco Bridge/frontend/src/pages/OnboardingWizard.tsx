@@ -17,6 +17,7 @@ import { SmartPlanMatchModal } from '../components/features/SmartPlanMatchModal'
 import { EngineerTrackingMap } from '../components/features/EngineerTrackingMap';
 import { SpeedTestWidget } from '../components/features/SpeedTestWidget';
 import { SmartMapAddressPicker } from '../components/features/SmartMapAddressPicker';
+import { OtpVortexAnimator } from '../components/features/OtpVortexAnimator';
 
 const paymentModeIcons: { [key: string]: React.ReactNode } = {
   'CORPORATE_PO': <FileText className="text-emerald-600 dark:text-emerald-400" size={20} />,
@@ -1917,24 +1918,30 @@ const DEFAULT_FALLBACK_PLANS = [
                   </form>
                 ) : (
                   <form onSubmit={handleVerifyOtp} className="space-y-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase">Enter Verification OTP</label>
-                      <input
-                        type="text"
-                        required
-                        maxLength={6}
-                        value={otpCode}
-                        onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                        placeholder="6 Digit Code (Mock is 123456)"
-                        className="border dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-2.5 text-xs text-center tracking-widest font-extrabold focus:outline-none focus:ring-2 focus:ring-tpf-purple dark:text-white"
-                      />
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setOtpCode('123456')}
+                        className="px-3.5 py-1.5 rounded-full text-[10px] font-black clay-badge-purple flex items-center gap-1.5 shadow hover:scale-105 transition"
+                      >
+                        <Zap size={12} className="text-amber-500 fill-amber-500" /> Auto-fill Demo Code (123456)
+                      </button>
                     </div>
+
+                    <OtpVortexAnimator
+                      otpCode={otpCode}
+                      onChange={(code) => setOtpCode(code)}
+                      isValidating={loading}
+                      label="6-Digit Verification OTP Code"
+                      sublabel={`Code dispatched to +91 ${mobileNumber}`}
+                    />
+
                     <button
                       type="submit"
                       disabled={loading || otpCode.length !== 6}
-                      className="w-full py-2.5 rounded-xl font-bold text-white gradient-bg flex items-center justify-center gap-1 shadow"
+                      className="w-full py-3.5 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xl disabled:opacity-40 transition"
                     >
-                      Verify & Log In <ChevronRight size={14} />
+                      {loading ? <RefreshCw size={16} className="animate-spin" /> : <ShieldCheck size={16} />} Verify OTP &amp; Log In <ChevronRight size={14} />
                     </button>
                   </form>
                 )}

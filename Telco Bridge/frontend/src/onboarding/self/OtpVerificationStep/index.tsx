@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import api from '../../../utils/api';
 import { useToast } from '../../../components/common/Toast';
 import { ShieldCheck, RefreshCw, ChevronRight, ChevronLeft, Zap, CheckCircle2, Smartphone } from 'lucide-react';
+import { OtpVortexAnimator } from '../../../components/features/OtpVortexAnimator';
 import type { Channel } from '../../shared/state/onboardingMachine';
 
 interface Props {
@@ -43,13 +44,15 @@ export const OtpVerificationStep: React.FC<Props> = ({ prefill, onComplete, onBa
     e.preventDefault();
     if (otpCode.length !== 6) { setError('Enter 6-digit OTP.'); return; }
     setError(''); setLoading(true);
-    try {
-      await api.post('/auth/verify-otp', { mobileNumber, otp: otpCode });
-      toast.success('Identity Verified', 'Mobile number authenticated.');
-      onComplete({ mobileNumber, otpVerified: true });
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Incorrect OTP. Try again.');
-    } finally { setLoading(false); }
+    setTimeout(async () => {
+      try {
+        await api.post('/auth/verify-otp', { mobileNumber, otp: otpCode });
+        toast.success('Identity Verified', 'Mobile number authenticated.');
+        onComplete({ mobileNumber, otpVerified: true });
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Incorrect OTP. Try again.');
+      } finally { setLoading(false); }
+    }, 1400);
   };
 
   return (
@@ -81,19 +84,13 @@ export const OtpVerificationStep: React.FC<Props> = ({ prefill, onComplete, onBa
       {error && <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-600 text-xs font-semibold border border-rose-200">{error}</div>}
 
       <form onSubmit={handleVerify} className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 block text-center">Enter 6-Digit Security Code</label>
-          <div className="flex justify-center gap-2 sm:gap-3">
-            {[0,1,2,3,4,5].map(i => (
-              <div key={i} className={`w-11 h-13 sm:w-12 sm:h-14 rounded-2xl flex items-center justify-center text-xl font-black transition-all ${otpCode[i] ? 'clay-pill-active scale-105' : 'clay-card border-2 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}>
-                {otpCode[i] || <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700" />}
-              </div>
-            ))}
-          </div>
-          <input type="text" required maxLength={6} value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
-            placeholder="Enter 6-digit code"
-            className="w-full text-center py-2 px-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono font-bold tracking-widest text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tpf-purple mt-2" />
-        </div>
+        <OtpVortexAnimator
+          otpCode={otpCode}
+          onChange={(code) => setOtpCode(code)}
+          isValidating={loading}
+          label="Enter 6-Digit Security Code"
+          sublabel="Enter the verification code broadcasted to your mobile device."
+        />
 
         <div className="space-y-3">
           <button type="submit" disabled={loading || isLoading || otpCode.length !== 6}

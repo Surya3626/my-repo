@@ -12,6 +12,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { SmartCoverageScanner } from '../components/features/SmartCoverageScanner';
 import { SpeedTestWidget } from '../components/features/SpeedTestWidget';
+import { OtpVortexAnimator } from '../components/features/OtpVortexAnimator';
 import { checkJourneyExists } from '../onboarding/shared/state/journeyApi';
 
 interface BroadbandPlan {
@@ -54,6 +55,7 @@ export const LandingPage: React.FC = () => {
   const [resumeOtpCode, setResumeOtpCode] = useState('');
   const [resumeTimer, setResumeTimer] = useState(60);
   const [resumeLoading, setResumeLoading] = useState(false);
+  const [isVerifyingResumeOtp, setIsVerifyingResumeOtp] = useState(false);
 
   // OTP Countdown timer effect
   useEffect(() => {
@@ -234,34 +236,39 @@ export const LandingPage: React.FC = () => {
       return;
     }
     setResumeLoading(true);
-    try {
-      const check = await checkJourneyExists(resumeMobile);
-      if (!check.exists) {
-        toast.error("No Active Booking Found", `No in-progress application found for +91 ${resumeMobile}.`);
-        setShowResumeModal(false);
-        navigate('/onboard/resume');
-        return;
-      }
+    setIsVerifyingResumeOtp(true);
 
-      const response = await api.post('/auth/otp/verify', { mobileNumber: resumeMobile, otp: resumeOtpCode });
-      const data = response.data?.data;
-      const newToken = data?.token || 'TOKEN-' + resumeMobile;
-      const newCust = data?.customer || { mobileNumber: resumeMobile, firstName: 'Subscriber' };
-
-      login(newToken, newCust);
-      localStorage.setItem('tpf_resume_mobile', resumeMobile);
-      toast.success("OTP Verified!", "Restoring saved onboarding draft session...");
-      setShowResumeModal(false);
-      navigate('/onboard', {
-        state: {
-          resumeMobile: resumeMobile,
+    setTimeout(async () => {
+      try {
+        const check = await checkJourneyExists(resumeMobile);
+        if (!check.exists) {
+          toast.error("No Active Booking Found", `No in-progress application found for +91 ${resumeMobile}.`);
+          setShowResumeModal(false);
+          navigate('/onboard/resume');
+          return;
         }
-      });
-    } catch (err: any) {
-      toast.error("Verification Error", err.response?.data?.message || "OTP verification failed.");
-    } finally {
-      setResumeLoading(false);
-    }
+
+        const response = await api.post('/auth/otp/verify', { mobileNumber: resumeMobile, otp: resumeOtpCode });
+        const data = response.data?.data;
+        const newToken = data?.token || 'TOKEN-' + resumeMobile;
+        const newCust = data?.customer || { mobileNumber: resumeMobile, firstName: 'Subscriber' };
+
+        login(newToken, newCust);
+        localStorage.setItem('tpf_resume_mobile', resumeMobile);
+        toast.success("OTP Verified!", "Restoring saved onboarding draft session...");
+        setShowResumeModal(false);
+        navigate('/onboard', {
+          state: {
+            resumeMobile: resumeMobile,
+          }
+        });
+      } catch (err: any) {
+        toast.error("Verification Error", err.response?.data?.message || "OTP verification failed.");
+      } finally {
+        setResumeLoading(false);
+        setIsVerifyingResumeOtp(false);
+      }
+    }, 1400);
   };
 
 
@@ -675,43 +682,46 @@ export const LandingPage: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="font-black text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider">
-                      6-Digit Verification OTP Code
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={6}
-                      pattern="[0-9]{6}"
-                      value={resumeOtpCode}
-                      onChange={e => setResumeOtpCode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="e.g. 123456"
-                      className="w-full clay-input text-center font-mono font-black text-2xl tracking-[0.5em] py-3.5 text-purple-600 dark:text-purple-300"
-                    />
-                    <div className="flex justify-between items-center text-xs pt-1">
-                      <span className="text-slate-400">
-                        {resumeTimer > 0 ? `Resend code in ${resumeTimer}s` : 'Didn\'t receive OTP?'}
-                      </span>
-                      {resumeTimer === 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setResumeTimer(60);
-                            toast.info("OTP Resent", `New verification code sent to ${resumeMobile}`);
-                          }}
-                          className="font-bold text-purple-600 dark:text-purple-400 underline"
-                        >
-                          Resend OTP
-                        </button>
-                      )}
-                    </div>
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setResumeOtpCode('123456')}
+                      className="px-3.5 py-1.5 rounded-full text-[10px] font-black clay-badge-purple flex items-center gap-1.5 shadow hover:scale-105 transition"
+                    >
+                      <Zap size={12} className="text-amber-500 fill-amber-500" /> Auto-fill Demo Code (123456)
+                    </button>
+                  </div>
+
+                  <OtpVortexAnimator
+                    otpCode={resumeOtpCode}
+                    onChange={(code) => setResumeOtpCode(code)}
+                    isValidating={isVerifyingResumeOtp}
+                    label="6-Digit Verification OTP Code"
+                    sublabel={`Code dispatched to +91 ${resumeMobile}`}
+                  />
+
+                  <div className="flex justify-between items-center text-xs pt-1">
+                    <span className="text-slate-400">
+                      {resumeTimer > 0 ? `Resend code in ${resumeTimer}s` : 'Didn\'t receive OTP?'}
+                    </span>
+                    {resumeTimer === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResumeTimer(60);
+                          toast.info("OTP Resent", `New verification code sent to ${resumeMobile}`);
+                        }}
+                        className="font-bold text-purple-600 dark:text-purple-400 underline"
+                      >
+                        Resend OTP
+                      </button>
+                    )}
                   </div>
 
                   <button
                     type="submit"
                     disabled={resumeLoading || resumeOtpCode.length !== 6}
-                    className="w-full py-4 clay-button-purple text-xs font-black uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 scale-105"
+                    className="w-full py-4 clay-button-purple text-xs font-black uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 scale-105 disabled:opacity-40"
                   >
                     {resumeLoading ? <RefreshCw size={16} className="animate-spin" /> : <ShieldCheck size={18} />} Verify OTP &amp; Resume Booking
                   </button>

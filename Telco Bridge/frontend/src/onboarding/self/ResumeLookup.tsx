@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import { useToast } from '../../components/common/Toast';
 import { checkJourneyExists } from '../shared/state/journeyApi';
-import { Smartphone, ArrowRight, RefreshCw, CheckCircle2, AlertTriangle, PlusCircle } from 'lucide-react';
+import { Smartphone, ArrowRight, RefreshCw, CheckCircle2, AlertTriangle, PlusCircle, Zap } from 'lucide-react';
+import { OtpVortexAnimator } from '../../components/features/OtpVortexAnimator';
 
 /**
  * ResumeLookup
@@ -26,6 +27,7 @@ export const ResumeLookup: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [error, setError] = useState('');
   const [noJourneyFound, setNoJourneyFound] = useState(false);
 
@@ -61,32 +63,37 @@ export const ResumeLookup: React.FC = () => {
     if (otp.length !== 6) { setError('Enter the 6-digit OTP.'); return; }
     setError('');
     setLoading(true);
-    try {
-      const res = await api.post('/auth/verify-otp', { mobileNumber: mobile, otp });
-      if (res.data?.success) {
-        // Confirm journey still exists before redirecting
-        const check = await checkJourneyExists(mobile);
-        if (!check.exists) {
-          setNoJourneyFound(true);
-          return;
-        }
+    setIsVerifyingOtp(true);
 
-        if ((check as any).status === 'COMPLETED') {
-          toast.success('Onboarding Completed!', 'Your connection is active. Redirecting to SelfCare...');
-          navigate('/selfcare');
-          return;
-        }
+    setTimeout(async () => {
+      try {
+        const res = await api.post('/auth/verify-otp', { mobileNumber: mobile, otp });
+        if (res.data?.success) {
+          // Confirm journey still exists before redirecting
+          const check = await checkJourneyExists(mobile);
+          if (!check.exists) {
+            setNoJourneyFound(true);
+            return;
+          }
 
-        toast.success('Verified!', 'Resuming your booking...');
-        navigate('/onboard', { state: { resumeMobile: mobile } });
-      } else {
-        setError('Invalid OTP. Please try again.');
+          if ((check as any).status === 'COMPLETED') {
+            toast.success('Onboarding Completed!', 'Your connection is active. Redirecting to SelfCare...');
+            navigate('/selfcare');
+            return;
+          }
+
+          toast.success('Verified!', 'Resuming your booking...');
+          navigate('/onboard', { state: { resumeMobile: mobile } });
+        } else {
+          setError('Invalid OTP. Please try again.');
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'OTP verification failed.');
+      } finally {
+        setLoading(false);
+        setIsVerifyingOtp(false);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'OTP verification failed.');
-    } finally {
-      setLoading(false);
-    }
+    }, 1400);
   };
 
   return (
@@ -168,26 +175,31 @@ export const ResumeLookup: React.FC = () => {
           <form onSubmit={handleVerifyOtp} className="space-y-4 text-left">
             <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-2">
               <CheckCircle2 size={14} />
-              OTP sent to {mobile}
+              OTP sent to +91 {mobile}
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                6-Digit OTP
-              </label>
-              <input
-                type="text"
-                required
-                maxLength={6}
-                value={otp}
-                onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="Enter 6-digit code"
-                className="border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-extrabold text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-tpf-purple"
-              />
+
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setOtp('123456')}
+                className="px-3.5 py-1.5 rounded-full text-[10px] font-black clay-badge-purple flex items-center gap-1.5 shadow hover:scale-105 transition"
+              >
+                <Zap size={12} className="text-amber-500 fill-amber-500" /> Auto-fill Demo Code (123456)
+              </button>
             </div>
+
+            <OtpVortexAnimator
+              otpCode={otp}
+              onChange={(code) => setOtp(code)}
+              isValidating={isVerifyingOtp}
+              label="6-Digit Authorization Code"
+              sublabel={`Code dispatched to +91 ${mobile}`}
+            />
+
             <button
               type="submit"
               disabled={loading || otp.length !== 6}
-              className="w-full py-3 rounded-xl font-extrabold text-sm text-white gradient-bg flex items-center justify-center gap-2 shadow disabled:opacity-40 transition"
+              className="w-full py-3.5 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl disabled:opacity-40 transition"
             >
               {loading ? <RefreshCw size={16} className="animate-spin" /> : null}
               Verify & Resume Booking <ArrowRight size={16} />
@@ -195,7 +207,7 @@ export const ResumeLookup: React.FC = () => {
             <button
               type="button"
               onClick={() => { setOtpSent(false); setOtp(''); setError(''); }}
-              className="w-full text-xs text-slate-500 hover:text-tpf-purple font-semibold transition"
+              className="w-full text-xs text-slate-500 hover:text-tpf-purple font-semibold transition text-center block"
             >
               ← Change Mobile Number
             </button>
