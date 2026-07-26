@@ -7,7 +7,7 @@ import {
   User, FileText, Settings, Compass, Phone, Star, Gauge, MapPin,
   Zap, CreditCard, ArrowUpRight, CheckCircle2, ShieldCheck, Download,
   Clock, PauseCircle, HelpCircle, AlertTriangle, RefreshCw, ChevronRight, ChevronLeft,
-  Tv, Sparkles, Wifi, Activity, Search, CheckSquare, SendHorizontal, Smartphone, UserCheck, Folder
+  Tv, Sparkles, Wifi, Activity, Search, CheckSquare, SendHorizontal, Smartphone, UserCheck, Folder, Palmtree
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { EngineerTrackingMap } from '../components/features/EngineerTrackingMap';
@@ -18,6 +18,7 @@ import { RechargeModal } from '../components/features/RechargeModal';
 import { SmartMapAddressPicker, AddressData } from '../components/features/SmartMapAddressPicker';
 import { CustomerDocumentVault } from '../components/features/CustomerDocumentVault';
 import { OtpVortexAnimator } from '../components/features/OtpVortexAnimator';
+import { VacationModeAnimator } from '../components/common/VacationModeAnimator';
 
 export const SelfCarePortal: React.FC = () => {
   const { toast } = useToast();
@@ -633,6 +634,49 @@ export const SelfCarePortal: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 text-left">
       
+      {/* 🌴 Persistent Animated Vacation Hold Alert Banner */}
+      {isOnVacationHold && (
+        <motion.div
+          initial={{ opacity: 0, y: -10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="p-4 rounded-3xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 shadow-2xl shadow-amber-500/20 border-2 border-amber-400 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden backdrop-blur-xl"
+        >
+          <div className="flex items-center gap-3.5 z-10">
+            <div className="w-10 h-10 rounded-2xl bg-slate-950 text-amber-400 flex items-center justify-center font-black animate-vacation-float shrink-0 shadow-md">
+              <Palmtree size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-sm uppercase tracking-wider">Vacation Hold Active 🌴</span>
+                <span className="px-2 py-0.5 rounded-lg bg-slate-950/80 text-amber-300 font-mono text-[10px] font-black uppercase">
+                  Zero Rental Mode
+                </span>
+              </div>
+              <p className="text-xs text-slate-900 font-extrabold opacity-90">
+                Broadband paused from <strong className="font-mono">{suspendStartDate}</strong> to <strong className="font-mono">{suspendEndDate}</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 z-10">
+            <button
+              type="button"
+              onClick={() => setActiveTab('service_requests')}
+              className="px-4 py-2 rounded-xl bg-slate-950 text-white font-black text-xs uppercase tracking-wider hover:bg-slate-800 transition shadow-lg"
+            >
+              Manage Hold State
+            </button>
+            <button
+              type="button"
+              onClick={handleResumeVacationHold}
+              className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase tracking-wider hover:bg-emerald-500 transition shadow-lg flex items-center gap-1.5"
+            >
+              <Zap size={14} className="fill-white" /> Resume Connection
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Profile Header & Account Summary Banner */}
       <div className="clay-card border-2 border-purple-500/30 p-6 md:p-8 shadow-2xl shadow-purple-500/10 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden backdrop-blur-xl bg-white/80 dark:bg-slate-900/80">
         
@@ -1402,153 +1446,21 @@ export const SelfCarePortal: React.FC = () => {
             {/* ─── TAB 6: SERVICE REQUESTS & VACATION PAUSE ─────────────────── */}
             {activeTab === 'service_requests' && (
               <div className="space-y-8 animate-fade-in text-left">
-                {/* Vacation Mode / Service Pause */}
-                <div className="clay-card p-6 md:p-8 space-y-6 border-2 border-amber-500/30">
-                  <div className="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <div>
-                      <h4 className="text-xl font-black text-slate-900 dark:text-white">Vacation Mode / Service Pause</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Temporarily pause connection billing during out-of-town travel with zero rental charges.</p>
-                    </div>
-                    <span className="clay-badge-purple px-3 py-1 text-xs font-black uppercase tracking-wider shrink-0">
-                      TRAI Compliant
-                    </span>
-                  </div>
+                {/* Vacation Mode / Service Pause - Modern Animated Interactive Component */}
+                <VacationModeAnimator
+                  isOnHold={isOnVacationHold}
+                  startDate={suspendStartDate}
+                  endDate={suspendEndDate}
+                  reason={holdReason}
+                  onStartDateChange={(val) => setSuspendStartDate(val)}
+                  onEndDateChange={(val) => setSuspendEndDate(val)}
+                  onReasonChange={(val) => setHoldReason(val)}
+                  onActivateHold={handleVacationHold}
+                  onResumeHold={handleResumeVacationHold}
+                  holdError={holdError}
+                  holdSuccess={holdSuccess}
+                />
 
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs space-y-1">
-                    <span className="font-black uppercase tracking-wider block text-[10px]">TRAI Telecommunication Regulatory Order 2024:</span>
-                    <p className="text-[11px] leading-relaxed font-medium">
-                      Subscribers can place broadband connections on temporary suspension for a <strong>minimum of 7 days</strong> up to a <strong>maximum of 90 days</strong> per calendar year. Billing is completely waived during the pause period.
-                    </p>
-                  </div>
-
-                  {holdSuccess && (
-                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-black flex items-center gap-2">
-                      <PauseCircle size={18} /> Connection successfully placed on Vacation Hold! Zero monthly tariff will apply during this period.
-                    </div>
-                  )}
-
-                  {holdError && (
-                    <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-black">
-                      {holdError}
-                    </div>
-                  )}
-
-                  {isOnVacationHold ? (
-                    /* Active Vacation Hold Status Card & Resume Button */
-                    <div className="p-6 rounded-3xl bg-amber-500/10 border-2 border-amber-500/40 text-xs space-y-4 animate-fade-in shadow-xl">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-500/30 pb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black animate-pulse shadow-md">
-                            <PauseCircle size={22} />
-                          </div>
-                          <div>
-                            <h4 className="font-black text-slate-900 dark:text-white text-base">Broadband Service Currently Paused (On Hold)</h4>
-                            <p className="text-slate-500 text-xs font-medium">Zero rental charges apply from {suspendStartDate} to {suspendEndDate}.</p>
-                          </div>
-                        </div>
-                        <span className="clay-badge-emerald px-3 py-1 text-xs font-black uppercase tracking-wider shrink-0">
-                          STATUS: PAUSED ⏸️
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                        <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-amber-500/20">
-                          <span className="text-[10px] text-slate-400 font-black uppercase block">Pause Start Date</span>
-                          <strong className="text-slate-900 dark:text-white font-mono text-sm">{suspendStartDate}</strong>
-                        </div>
-                        <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-amber-500/20">
-                          <span className="text-[10px] text-slate-400 font-black uppercase block">Scheduled Resume Date</span>
-                          <strong className="text-slate-900 dark:text-white font-mono text-sm">{suspendEndDate}</strong>
-                        </div>
-                        <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-amber-500/20">
-                          <span className="text-[10px] text-slate-400 font-black uppercase block">Billing Tariff Status</span>
-                          <strong className="text-emerald-600 dark:text-emerald-400 font-bold">100% RENTAL WAIVED ✓</strong>
-                        </div>
-                      </div>
-
-                      {/* RESUME BUTTON (Active when on hold) */}
-                      <button
-                        type="button"
-                        onClick={handleResumeVacationHold}
-                        className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 hover:scale-105 transition"
-                      >
-                        <Zap size={18} className="fill-white" /> Resume Broadband Connection Now (Cancel Hold)
-                      </button>
-                    </div>
-                  ) : (
-                    /* Vacation Hold Application Form & Hold Button */
-                    <form onSubmit={handleVacationHold} className="space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-extrabold">
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Pause Start Date</label>
-                          <input
-                            type="date"
-                            required
-                            value={suspendStartDate}
-                            min={todayStr}
-                            onChange={(e) => setSuspendStartDate(e.target.value)}
-                            className="w-full clay-input px-4 py-3 font-mono text-xs dark:text-white"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Pause Resume Date</label>
-                          <input
-                            type="date"
-                            required
-                            value={suspendEndDate}
-                            min={suspendStartDate || todayStr}
-                            onChange={(e) => setSuspendEndDate(e.target.value)}
-                            className="w-full clay-input px-4 py-3 font-mono text-xs dark:text-white"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5 sm:col-span-2">
-                          <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Reason for Temporary Hold</label>
-                          <input
-                            type="text"
-                            required
-                            value={holdReason}
-                            onChange={(e) => setHoldReason(e.target.value)}
-                            placeholder="e.g. Official business trip / Out of town vacation"
-                            className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-                          />
-                        </div>
-                      </div>
-
-                      {(() => {
-                        const start = new Date(suspendStartDate);
-                        const end = new Date(suspendEndDate);
-                        const diffDays = Math.ceil((end.getTime() - start.getTime()) / 86400000);
-                        const isValid = !isNaN(diffDays) && diffDays >= 7 && diffDays <= 90;
-
-                        return (
-                          <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
-                            <div>
-                              <span className="text-[10px] text-slate-400 font-extrabold uppercase block">Calculated Hold Period</span>
-                              <span className="font-extrabold text-slate-900 dark:text-white">
-                                {isValid ? `${diffDays} Days Suspension` : 'Invalid Date Range (Must be 7-90 days)'}
-                              </span>
-                            </div>
-                            <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase ${
-                              isValid ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
-                            }`}>
-                              {isValid ? 'VALID RANGE' : 'INVALID'}
-                            </span>
-                          </div>
-                        );
-                      })()}
-
-                      {/* HOLD BUTTON (Active when resumed) */}
-                      <button
-                        type="submit"
-                        className="px-8 py-3.5 bg-amber-600 hover:bg-amber-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl flex items-center gap-2"
-                      >
-                        <PauseCircle size={18} /> Enable Vacation Hold Mode
-                      </button>
-                    </form>
-                  )}
-                </div>
 
                 {/* Additional Quick Service Adjustment Options */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

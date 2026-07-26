@@ -634,7 +634,51 @@
   animation: fiber-beam-flow 1.2s linear infinite;
 }
 
+/* 🌴 Vacation Mode Unique Animations */
+@keyframes vacation-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(3deg); }
+}
 
+@keyframes vacation-wave {
+  0% { transform: translateX(0) scaleY(1); }
+  50% { transform: translateX(-25%) scaleY(1.1); }
+  100% { transform: translateX(-50%) scaleY(1); }
+}
 
+@keyframes sunbeam-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); filter: blur(20px); }
+  50% { opacity: 0.65; transform: scale(1.15); filter: blur(30px); }
+}
 
+@keyframes recharge-shockwave {
+  0% { transform: scale(0.4); opacity: 1; border-color: rgba(16, 185, 129, 0.9); }
+  100% { transform: scale(2.2); opacity: 0; border-color: rgba(168, 85, 247, 0); }
+}
 
+@keyframes flight-pass {
+  0% { transform: translateX(-100%) translateY(10px) rotate(-5deg); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateX(110vw) translateY(-20px) rotate(5deg); opacity: 0; }
+}
+
+.animate-vacation-float {
+  animation: vacation-float 4s ease-in-out infinite;
+}
+
+.animate-vacation-wave {
+  animation: vacation-wave 12s ease-in-out infinite alternate;
+}
+
+.animate-sunbeam-pulse {
+  animation: sunbeam-pulse 5s ease-in-out infinite;
+}
+
+.animate-recharge-shockwave {
+  animation: recharge-shockwave 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.animate-flight-pass {
+  animation: flight-pass 14s ease-in-out infinite;
+}
