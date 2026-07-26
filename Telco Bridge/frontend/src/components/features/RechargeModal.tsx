@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, Building2, CheckCircle2, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import api from '../../utils/api';
 import { useToast } from '../common/Toast';
+import { ConfettiCanvas } from './ConfettiCanvas';
 
 interface RechargeModalProps {
   isOpen: boolean;
@@ -350,43 +351,53 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             </form>
           </>
         ) : (
-          /* Payment Success Confirmation */
-          <div className="text-center py-6 space-y-6">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto border-2 border-emerald-300 dark:border-emerald-700 shadow-xl">
-              <CheckCircle2 size={36} />
+          /* Payment Success Confirmation with Confetti Particle Explosion & 3D Metallic Stamp */
+          <div className="text-center py-6 space-y-6 relative">
+            <ConfettiCanvas />
+
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center mx-auto border-4 border-emerald-300 dark:border-emerald-700 shadow-2xl animate-victory-burst">
+              <CheckCircle2 size={48} />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white">Recharge Successful!</h3>
-              <p className="text-xs text-slate-400">Your TelcoBridge account has been extended by {tenure} Month{tenure > 1 ? 's' : ''}.</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider">Recharge Successful!</h3>
+              <p className="text-xs text-slate-400 font-medium">Your TelcoBridge broadband subscription has been extended by {tenure} Month{tenure > 1 ? 's' : ''}.</p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border dark:border-slate-800 text-xs text-left space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Transaction ID</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">{successResult.payment?.transactionId}</span>
+            {/* Receipt Card with 3D Holographic Edge & Metallic PAID & SEALED Stamp */}
+            <div className="bg-slate-50 dark:bg-slate-900 p-5 rounded-3xl border-2 border-emerald-500/30 text-xs text-left space-y-3 relative overflow-hidden shadow-2xl">
+              
+              {/* 🏆 3D METALLIC PAID & SEALED STAMP OVERLAY */}
+              <div className="absolute top-3 right-4 px-4 py-1.5 border-4 border-emerald-500 text-emerald-500 dark:text-emerald-400 font-black text-sm uppercase tracking-widest rounded-2xl rotate-[-6deg] opacity-90 animate-stamp-bounce pointer-events-none shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                ✓ PAID &amp; SEALED
+              </div>
+
+              <div className="flex justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Transaction Ref ID</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 font-mono text-sm">{successResult.payment?.transactionId}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Amount Paid</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">₹{successResult.payment?.amount}</span>
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Total Amount Paid</span>
+                <span className="font-black text-purple-600 dark:text-purple-400 font-mono text-sm">₹{successResult.payment?.amount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Payment Method</span>
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Payment Method</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">{successResult.payment?.paymentMode}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">New Expiry Date</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">New Subscription Expiry</span>
+                <span className="font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
                   {new Date(successResult.subscription?.endDate).toLocaleDateString()}
                 </span>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={onClose}
-              className="w-full py-3 rounded-2xl text-white font-extrabold text-xs gradient-bg hover:opacity-90 shadow-md"
+              className="w-full py-4 rounded-2xl text-white font-black text-xs uppercase tracking-wider clay-button-purple shadow-xl transition"
             >
-              Done & Return to Dashboard
+              Done &amp; Return to SelfCare Hub
             </button>
           </div>
         )}

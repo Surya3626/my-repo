@@ -592,10 +592,48 @@
     inset 2px 2px 5px rgba(255, 255, 255, 0.05);
   border: 1.5px solid #334155 !important;
 }
-.dark .clay-pill-inactive:hover {
-  border-color: #8b5cf6 !important;
-  color: #c084fc !important;
+
+/* ⚡ 3D Biometric Laser Scanning & Radar Sweep Keyframes */
+@keyframes laser-sweep {
+  0% { top: 0%; opacity: 0.8; }
+  50% { top: 95%; opacity: 1; }
+  100% { top: 0%; opacity: 0.8; }
 }
+
+@keyframes sonar-radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes stamp-bounce {
+  0% { transform: scale(3) rotate(-25deg); opacity: 0; filter: blur(8px); }
+  60% { transform: scale(0.9) rotate(-5deg); opacity: 1; filter: blur(0px); }
+  80% { transform: scale(1.08) rotate(-7deg); }
+  100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+}
+
+@keyframes fiber-beam-flow {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.animate-laser-sweep {
+  animation: laser-sweep 2.2s ease-in-out infinite;
+}
+
+.animate-radar-sweep {
+  animation: sonar-radar-sweep 4s linear infinite;
+}
+
+.animate-stamp-bounce {
+  animation: stamp-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fiber-beam {
+  stroke-dasharray: 12 6;
+  animation: fiber-beam-flow 1.2s linear infinite;
+}
+
 
 
 

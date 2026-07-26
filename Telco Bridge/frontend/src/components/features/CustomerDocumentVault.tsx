@@ -3,7 +3,7 @@ import {
   FileText, Download, Eye, ShieldCheck, CheckCircle2, Upload, 
   Search, Filter, Sparkles, Clock, Lock, FileCheck, Printer, X, 
   Folder, UserCheck, RefreshCw, Zap, ArrowDownToLine, ExternalLink,
-  Building, CheckSquare, FileSpreadsheet, ShieldAlert
+  Building, CheckSquare, FileSpreadsheet, ShieldAlert, Scan
 } from 'lucide-react';
 import { useToast } from '../common/Toast';
 

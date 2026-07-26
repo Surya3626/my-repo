@@ -3,9 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../../components/common/Toast';
 import { AdminModeTopBar } from '../shared/components/AdminModeTopBar';
 import { StepProgressBar } from '../shared/components/StepProgressBar';
+import { StepTransitionOverlay } from '../shared/components/StepTransitionOverlay';
 import {
   getUiSteps,
   getNextUiStep,
+  getUiStepIndex,
+  getTotalUiSteps,
   type OnboardingStep,
   type Channel,
 } from '../shared/state/onboardingMachine';
@@ -100,19 +103,32 @@ export const SalesAgentOnboardingRouter: React.FC = () => {
   };
 
 
+  const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
+  const [transitionNextStep, setTransitionNextStep] = useState<OnboardingStep>('CUSTOMER_DETAILS');
+
   // ─── Step navigation ────────────────────────────────────────────────────────
 
   const handleStepComplete = useCallback(async (payload: Record<string, unknown>) => {
     if (!journey) return;
     setLoading(true);
     setError('');
+
+    const next = getNextUiStep(CHANNEL, currentStep);
+    if (next !== 'COMPLETE') {
+      setTransitionNextStep(next);
+      setShowTransitionOverlay(true);
+    }
+
     try {
       const updated = await completeStep(
         journey.journeyId, currentStep, JSON.stringify(payload), agentId
       );
+      
+      // Brief animated delay for step transition overlay
+      await new Promise(r => setTimeout(r, 1100));
+
       applyJourney(updated);
 
-      const next = getNextUiStep(CHANNEL, currentStep);
       if (next === 'COMPLETE') {
         toast.success('Onboarding Complete!', 'Customer journey fully completed.');
         navigate('/admin');
@@ -125,6 +141,7 @@ export const SalesAgentOnboardingRouter: React.FC = () => {
       setError(err.response?.data?.message || 'Failed to save step.');
     } finally {
       setLoading(false);
+      setShowTransitionOverlay(false);
     }
   }, [journey, currentStep, agentId, navigate, toast]);
 
@@ -195,6 +212,15 @@ export const SalesAgentOnboardingRouter: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8 animate-fade-in">
+      {/* 🔮 Unique Animated Holographic Step Transition Overlay */}
+      <StepTransitionOverlay
+        isVisible={showTransitionOverlay}
+        fromStep={currentStep}
+        toStep={transitionNextStep}
+        currentIndex={getUiStepIndex(CHANNEL, transitionNextStep)}
+        totalSteps={getTotalUiSteps(CHANNEL)}
+      />
+
       {/* Sales Agent Mode Top Bar */}
       <AdminModeTopBar
         agentId={agentId}
@@ -222,8 +248,15 @@ export const SalesAgentOnboardingRouter: React.FC = () => {
         </div>
       )}
 
-      {/* Active step — OTP_VERIFICATION absent in SALES_AGENT channel */}
-      <div className="clay-card p-8 relative min-h-[400px] flex flex-col justify-between">
+      {/* Active step container — OTP_VERIFICATION absent in SALES_AGENT channel */}
+      <div key={currentStep} className="clay-card p-8 relative min-h-[400px] flex flex-col justify-between animate-slide-right overflow-hidden shadow-2xl">
+        {/* 🚀 Quantum Warp Step Transition Conduit Beam */}
+        {loading && (
+          <div className="absolute top-0 inset-x-0 h-2 bg-slate-950 overflow-hidden z-30 flex items-center">
+            <div className="h-full w-full bg-gradient-to-r from-purple-600 via-pink-500 to-emerald-400 animate-fiber-beam shadow-[0_0_15px_#a855f7]" />
+          </div>
+        )}
+
         {currentStep === 'FEASIBILITY_CHECK' && <FeasibilityCheckStep {...stepProps} />}
         {currentStep === 'CUSTOMER_DETAILS' && <CustomerDetailsStep {...stepProps} />}
         {currentStep === 'DOCUMENT_COLLECTION' && <DocumentCollectionStep {...stepProps} />}

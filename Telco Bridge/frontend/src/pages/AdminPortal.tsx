@@ -4,12 +4,13 @@ import api from '../utils/api';
 import { useToast } from '../components/common/Toast';
 import { 
   Users, Layers, Landmark, BarChart3, ShieldCheck, FileCheck, 
-  RefreshCw, ClipboardList, Check, X, CheckSquare, Search, UserPlus, PlayCircle, Eye,
+  RefreshCw, ClipboardList, Check, X, CheckSquare, Search, UserPlus, PlayCircle, Eye, EyeOff, User, Lock, KeyRound, Sun, Moon,
   MessageSquare, Bell, Wifi, Activity, Cpu, Server, MapPin, Sparkles, Zap,
   CheckCircle2, AlertTriangle, AlertCircle, Clock, ArrowUpRight, Send, RotateCw, Globe, ChevronRight, ChevronLeft, LogOut, Plus, Menu, Navigation, SendHorizontal
 } from 'lucide-react';
 import { JourneyTimeline } from '../components/features/JourneyTimeline';
 import { SmartMapAddressPicker, AddressData } from '../components/features/SmartMapAddressPicker';
+import { AdminAuthAnimationOverlay } from '../components/features/AdminAuthAnimationOverlay';
 
 export const AdminPortal: React.FC = () => {
   const { toast } = useToast();
@@ -27,6 +28,16 @@ export const AdminPortal: React.FC = () => {
   });
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoginDarkTheme, setIsLoginDarkTheme] = useState(true);
+  const [authAnimMode, setAuthAnimMode] = useState<'LOGIN' | 'LOGOUT' | null>(null);
+
+  // Sync dark class on document element for dark mode styles
+  useEffect(() => {
+    if (!isAdminLoggedIn) {
+      document.documentElement.classList.toggle('dark', isLoginDarkTheme);
+    }
+  }, [isLoginDarkTheme, isAdminLoggedIn]);
 
   // Sidebar navigation active tab & collapse state
   const [adminTab, setAdminTab] = useState<'kpis' | 'kyc' | 'customers' | 'rfs' | 'users' | 'logs'>('kpis');
@@ -193,6 +204,8 @@ export const AdminPortal: React.FC = () => {
     try {
       const res = await api.post('/auth/admin/login', { username: adminUsername, password: adminPassword });
       if (res.data?.success) {
+        setAuthAnimMode('LOGIN');
+        await new Promise(r => setTimeout(r, 1300));
         localStorage.setItem('tpf_admin_token', res.data.data.token);
         setIsAdminLoggedIn(true);
         toast.success("Admin Authenticated", "Onboarding Operations Console unlocked.");
@@ -203,13 +216,18 @@ export const AdminPortal: React.FC = () => {
       toast.error("Authentication Error", msg);
     } finally {
       setLoading(false);
+      setAuthAnimMode(null);
     }
   };
 
   const handleAdminLogout = () => {
-    localStorage.removeItem('tpf_admin_token');
-    setIsAdminLoggedIn(false);
-    toast.info("Logged Out", "Admin session ended.");
+    setAuthAnimMode('LOGOUT');
+    setTimeout(() => {
+      localStorage.removeItem('tpf_admin_token');
+      setIsAdminLoggedIn(false);
+      setAuthAnimMode(null);
+      toast.info("Logged Out", "Admin session ended.");
+    }, 1300);
   };
 
   // Notify Audit Team for E-KYC Approval Action
@@ -478,65 +496,284 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
-  // Login Screen Renderer
+  // High-Impact Command Center Admin Login Screen (Supports Live Dark & Light Theme Switcher)
   if (!isAdminLoggedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 text-left">
-        <div className="clay-modal p-8 max-w-md w-full space-y-6 text-left border-2 border-purple-500/40 shadow-2xl relative backdrop-blur-xl bg-white/90 dark:bg-slate-900/90">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center mx-auto font-black text-2xl shadow-xl shadow-purple-500/30 ring-4 ring-purple-500/20">
-            <ShieldCheck size={36} />
-          </div>
-          
-          <div className="text-center space-y-2">
-            <span className="clay-badge-purple px-3 py-1 text-[10px] font-black uppercase tracking-wider">
-              ONBOARDING OPERATIONS CONSOLE
+      <div className={`min-h-screen flex flex-col justify-between p-4 md:p-8 text-left relative overflow-hidden select-none transition-colors duration-500 ${
+        isLoginDarkTheme ? 'bg-slate-950 text-white' : 'bg-gradient-to-br from-purple-50/80 via-slate-50 to-indigo-50/80 text-slate-900'
+      }`}>
+        <AdminAuthAnimationOverlay mode={authAnimMode} username={adminUsername || 'Operations Admin'} />
+
+        {/* Ambient Radial Glowing Orbs */}
+        <div className={`absolute -top-40 -left-40 w-96 h-96 rounded-full blur-[120px] pointer-events-none animate-pulse-slow ${
+          isLoginDarkTheme ? 'bg-purple-600/30' : 'bg-purple-400/20'
+        }`} />
+        <div className={`absolute -bottom-40 -right-40 w-96 h-96 rounded-full blur-[120px] pointer-events-none animate-pulse-slow ${
+          isLoginDarkTheme ? 'bg-pink-600/30' : 'bg-pink-400/20'
+        }`} />
+        <div className={`absolute inset-0 [background-size:32px_32px] opacity-15 pointer-events-none ${
+          isLoginDarkTheme ? 'bg-[radial-gradient(#8b5cf6_1px,transparent_1px)]' : 'bg-[radial-gradient(#7c3aed_1px,transparent_1px)]'
+        }`} />
+
+        {/* Top Bar: Brand Badge & Live Theme Switcher */}
+        <div className="w-full max-w-5xl mx-auto flex justify-between items-center relative z-20 pb-4">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            <span className={`text-[10px] font-black uppercase tracking-widest ${
+              isLoginDarkTheme ? 'text-purple-400' : 'text-purple-700'
+            }`}>
+              TELCOBRIDGE OPERATIONS GATEWAY v4.2
             </span>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Admin Operations Gateway</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Authenticate to manage customer onboarding flows, E-KYC verifications, and GIS RFS requests.
-            </p>
           </div>
 
-          {errorMessage && (
-            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold animate-shake flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleAdminLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Admin Username</label>
-              <input
-                type="text"
-                required
-                value={adminUsername}
-                onChange={e => setAdminUsername(e.target.value)}
-                placeholder="e.g. admin"
-                className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Security Password</label>
-              <input
-                type="password"
-                required
-                value={adminPassword}
-                onChange={e => setAdminPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl mt-2"
-            >
-              {loading ? <RefreshCw className="animate-spin" size={18} /> : <ShieldCheck size={18} />} Authenticate Operations Admin
-            </button>
-          </form>
+          {/* ☀️ / 🌙 Live Theme Toggle Switcher Button */}
+          <button
+            type="button"
+            onClick={() => setIsLoginDarkTheme(!isLoginDarkTheme)}
+            className={`px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all duration-300 ${
+              isLoginDarkTheme
+                ? 'bg-slate-900 border border-purple-500/40 text-purple-300 hover:bg-slate-800'
+                : 'bg-white border-2 border-purple-300 text-purple-700 hover:bg-purple-50'
+            }`}
+          >
+            {isLoginDarkTheme ? (
+              <>
+                <Sun size={16} className="text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
+                <span>Switch to Light Theme</span>
+              </>
+            ) : (
+              <>
+                <Moon size={16} className="text-purple-600" />
+                <span>Switch to Dark Theme</span>
+              </>
+            )}
+          </button>
         </div>
+
+        {/* Main Content Layout */}
+        <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10 my-auto">
+          
+          {/* Left Hero Column: Enterprise Telecom Operations Status */}
+          <div className="lg:col-span-6 space-y-6 text-left hidden lg:block pr-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white flex items-center justify-center font-black text-2xl shadow-xl shadow-purple-500/30 ring-4 ring-purple-500/20">
+                <ShieldCheck size={28} />
+              </div>
+              <div>
+                <span className={`text-[10px] font-black uppercase tracking-widest block ${
+                  isLoginDarkTheme ? 'text-purple-400' : 'text-purple-700'
+                }`}>
+                  PAN-INDIA TELECOM CORE ENGINE
+                </span>
+                <h1 className={`text-3xl font-black tracking-tight ${
+                  isLoginDarkTheme ? 'text-white' : 'text-slate-900'
+                }`}>
+                  TelcoBridge Command Center
+                </h1>
+              </div>
+            </div>
+
+            <p className={`text-xs font-medium leading-relaxed ${
+              isLoginDarkTheme ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              Centralized administrative gateway for managing subscriber FTTH onboarding, automated DoT E-KYC compliance, GIS RFS network feasibility, and real-time field engineer dispatch.
+            </p>
+
+            {/* 4 Live Telemetry Status Cards */}
+            <div className="grid grid-cols-2 gap-3 text-xs pt-2">
+              <div className={`p-4 rounded-2xl border space-y-1 shadow-lg backdrop-blur-md transition-colors ${
+                isLoginDarkTheme ? 'bg-slate-900/90 border-purple-500/30 text-white' : 'bg-white/90 border-purple-200 text-slate-900'
+              }`}>
+                <div className="flex items-center justify-between opacity-80">
+                  <span className="text-[10px] font-black uppercase tracking-wider">Network Core Uptime</span>
+                  <Wifi size={14} className="text-emerald-500 animate-pulse" />
+                </div>
+                <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">99.98% SLA</p>
+                <p className="text-[9px] text-slate-500 font-semibold">Active Optical Rings</p>
+              </div>
+
+              <div className={`p-4 rounded-2xl border space-y-1 shadow-lg backdrop-blur-md transition-colors ${
+                isLoginDarkTheme ? 'bg-slate-900/90 border-purple-500/30 text-white' : 'bg-white/90 border-purple-200 text-slate-900'
+              }`}>
+                <div className="flex items-center justify-between opacity-80">
+                  <span className="text-[10px] font-black uppercase tracking-wider">GIS Fiber Splitters</span>
+                  <Activity size={14} className="text-purple-500" />
+                </div>
+                <p className="text-lg font-black text-purple-700 dark:text-purple-300 font-mono">2,840 Nodes</p>
+                <p className="text-[9px] text-slate-500 font-semibold">Ready-For-Service</p>
+              </div>
+
+              <div className={`p-4 rounded-2xl border space-y-1 shadow-lg backdrop-blur-md transition-colors ${
+                isLoginDarkTheme ? 'bg-slate-900/90 border-purple-500/30 text-white' : 'bg-white/90 border-purple-200 text-slate-900'
+              }`}>
+                <div className="flex items-center justify-between opacity-80">
+                  <span className="text-[10px] font-black uppercase tracking-wider">Security Vault</span>
+                  <ShieldCheck size={14} className="text-pink-500" />
+                </div>
+                <p className="text-lg font-black text-pink-600 dark:text-pink-400 font-mono">256-Bit SSL</p>
+                <p className="text-[9px] text-slate-500 font-semibold">DoT Audit Compliant</p>
+              </div>
+
+              <div className={`p-4 rounded-2xl border space-y-1 shadow-lg backdrop-blur-md transition-colors ${
+                isLoginDarkTheme ? 'bg-slate-900/90 border-purple-500/30 text-white' : 'bg-white/90 border-purple-200 text-slate-900'
+              }`}>
+                <div className="flex items-center justify-between opacity-80">
+                  <span className="text-[10px] font-black uppercase tracking-wider">Pending E-KYC Queue</span>
+                  <Sparkles size={14} className="text-amber-500" />
+                </div>
+                <p className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono">14 Orders</p>
+                <p className="text-[9px] text-slate-500 font-semibold">Priority Verifications</p>
+              </div>
+            </div>
+
+            <div className={`p-3.5 rounded-2xl border text-[10px] font-bold flex items-center gap-2 ${
+              isLoginDarkTheme ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-purple-100/80 border-purple-300 text-purple-800'
+            }`}>
+              <Sparkles size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
+              <span>Automating high-speed FTTH broadband subscriber onboarding across pan-India circles.</span>
+            </div>
+          </div>
+
+          {/* Right Column: Glassmorphism / Claymorphism Form Card (Cohesive with Active Theme) */}
+          <div className="lg:col-span-6 w-full max-w-md mx-auto">
+            <div className={`p-8 border-2 rounded-3xl space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-2xl transition-all duration-300 ${
+              isLoginDarkTheme 
+                ? 'bg-slate-900/95 border-purple-500/40 text-white shadow-[0_0_60px_rgba(124,58,237,0.35)]' 
+                : 'bg-white/95 border-purple-300 text-slate-900 shadow-[0_0_40px_rgba(124,58,237,0.15)]'
+            }`}>
+              
+              {/* Top Animated Laser Gradient Conduit */}
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-purple-600 via-pink-500 to-emerald-400 animate-fiber-beam shadow-[0_0_15px_#a855f7]" />
+
+              <div className="text-center space-y-2 pt-1">
+                <span className="clay-badge-purple px-3.5 py-1 text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-md">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  OPERATIONS CONTROL CENTER • LEVEL 1 CLEARANCE
+                </span>
+                <h2 className={`text-2xl font-black uppercase tracking-wider ${
+                  isLoginDarkTheme ? 'text-white' : 'text-slate-900'
+                }`}>Admin Portal Login</h2>
+                <p className={`text-xs font-medium ${
+                  isLoginDarkTheme ? 'text-slate-400' : 'text-slate-500'
+                }`}>
+                  Enter authorized administrator credentials to unlock the management console.
+                </p>
+              </div>
+
+              {errorMessage && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold animate-shake flex items-center gap-2 shadow">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                
+                {/* Username Input */}
+                <div className="space-y-1.5 text-left">
+                  <div className="flex justify-between items-center">
+                    <label className={`text-[10px] font-black uppercase tracking-wider block ${
+                      isLoginDarkTheme ? 'text-purple-300' : 'text-purple-700'
+                    }`}>Admin Username</label>
+                    <span className="text-[9px] text-slate-400 font-mono font-bold">Default: admin</span>
+                  </div>
+                  <div className="relative">
+                    <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-500 pointer-events-none" />
+                    <input
+                      type="text"
+                      required
+                      value={adminUsername}
+                      onChange={e => setAdminUsername(e.target.value)}
+                      placeholder="e.g. admin"
+                      className={`w-full border-2 rounded-2xl pl-11 pr-4 py-3.5 text-xs font-semibold focus:outline-none focus:ring-2 transition shadow-inner ${
+                        isLoginDarkTheme
+                          ? 'bg-slate-950 border-slate-800 text-white focus:border-purple-500 focus:ring-purple-500/30'
+                          : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-purple-600 focus:ring-purple-500/20'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Password Input with Show/Hide Toggle */}
+                <div className="space-y-1.5 text-left">
+                  <div className="flex justify-between items-center">
+                    <label className={`text-[10px] font-black uppercase tracking-wider block ${
+                      isLoginDarkTheme ? 'text-purple-300' : 'text-purple-700'
+                    }`}>Security Password</label>
+                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">Level 1 Encrypted</span>
+                  </div>
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-500 pointer-events-none" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={adminPassword}
+                      onChange={e => setAdminPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className={`w-full border-2 rounded-2xl pl-11 pr-11 py-3.5 text-xs font-mono font-bold focus:outline-none focus:ring-2 transition shadow-inner ${
+                        isLoginDarkTheme
+                          ? 'bg-slate-950 border-slate-800 text-white focus:border-purple-500 focus:ring-purple-500/30'
+                          : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-purple-600 focus:ring-purple-500/20'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-600 transition"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 1-Click Quick Demo Credentials Pill */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminUsername('admin');
+                      setAdminPassword('admin123');
+                      toast.info("Demo Credentials Filled", "Click Authenticate to unlock portal.");
+                    }}
+                    className={`w-full py-2 px-3 rounded-xl border text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition ${
+                      isLoginDarkTheme
+                        ? 'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20'
+                        : 'bg-purple-100 border-purple-300 text-purple-800 hover:bg-purple-200'
+                    }`}
+                  >
+                    <KeyRound size={14} className="text-purple-600 dark:text-purple-400" />
+                    ⚡ 1-Click Auto Fill Demo Admin Credentials
+                  </button>
+                </div>
+
+                {/* Main Authenticate Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 rounded-2xl text-white font-black text-xs uppercase tracking-wider clay-button-purple shadow-2xl flex items-center justify-center gap-2 transition hover:scale-102 mt-2"
+                >
+                  {loading ? <RefreshCw className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
+                  Authenticate Operations Admin <ChevronRight size={18} />
+                </button>
+              </form>
+
+              {/* Bottom Compliance Badge */}
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-4 text-center">
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                  🔒 PCI-DSS Level 1 Compliant • DoT Telecom Gateway v4.2
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer info bar */}
+        <div className="w-full max-w-5xl mx-auto pt-4 border-t border-slate-200 dark:border-slate-900 text-center text-[10px] font-bold text-slate-400">
+          TelcoBridge Operations Console • Enterprise BroadBand Provisioning & GIS Management
+        </div>
+
       </div>
     );
   }
@@ -552,7 +789,8 @@ export const AdminPortal: React.FC = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased text-left transition-all duration-300">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased text-left transition-all duration-300 relative">
+      <AdminAuthAnimationOverlay mode={authAnimMode} username={adminUsername || 'Operations Admin'} />
       
       {/* ─── LEFT COLLAPSIBLE SIDEBAR NAVIGATION ───────────────────────────── */}
       <aside className={`clay-card border-r-2 border-purple-500/30 backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 shadow-2xl p-4 flex flex-col justify-between min-h-screen shrink-0 z-20 transition-all duration-300 ${
@@ -676,6 +914,30 @@ export const AdminPortal: React.FC = () => {
 
           {/* Top Status & Quick Action Buttons */}
           <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto justify-end">
+            {/* Post-Login Dark / Light Theme Mode Switcher */}
+            <button
+              type="button"
+              onClick={() => {
+                const nextDark = !isLoginDarkTheme;
+                setIsLoginDarkTheme(nextDark);
+                document.documentElement.classList.toggle('dark', nextDark);
+              }}
+              className="clay-modal px-3.5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 text-slate-700 dark:text-slate-200 transition shrink-0 hover:scale-105 shadow"
+              title="Toggle Theme Mode"
+            >
+              {isLoginDarkTheme ? (
+                <>
+                  <Sun size={16} className="text-amber-400" />
+                  <span className="hidden sm:inline text-xs font-black">Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon size={16} className="text-purple-600" />
+                  <span className="hidden sm:inline text-xs font-black">Dark Mode</span>
+                </>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setShowRfsModal(true)}

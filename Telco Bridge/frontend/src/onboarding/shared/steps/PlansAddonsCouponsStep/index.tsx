@@ -4,6 +4,7 @@ import { useToast } from '../../../../components/common/Toast';
 import { Zap, ChevronRight, ChevronLeft, RefreshCw, CheckCircle2, Tag, Sparkles, Server, Wallet, Building, ShieldCheck, Settings, Check } from 'lucide-react';
 import { PlanComparisonTable } from '../../../../components/features/PlanComparisonTable';
 import { SmartPlanMatchModal } from '../../../../components/features/SmartPlanMatchModal';
+import { ConfettiCanvas } from '../../../../components/features/ConfettiCanvas';
 import type { Channel } from '../../state/onboardingMachine';
 
 interface Props {
@@ -29,6 +30,7 @@ export const PlansAddonsCouponsStep: React.FC<Props> = ({ prefill, onComplete, o
   const [couponCode, setCouponCode] = useState((p.couponCode as string) || '');
   const [couponApplied, setCouponApplied] = useState((p.couponApplied as boolean) || false);
   const [couponDiscount, setCouponDiscount] = useState((p.couponDiscount as number) || 0);
+  const [showCouponConfetti, setShowCouponConfetti] = useState(false);
 
   // Billing Cycle & Model States
   const [billingCycleMonths, setBillingCycleMonths] = useState<number>((p.billingCycleMonths as number) || 1);
@@ -72,6 +74,11 @@ export const PlansAddonsCouponsStep: React.FC<Props> = ({ prefill, onComplete, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const triggerCouponCelebration = () => {
+    setShowCouponConfetti(true);
+    setTimeout(() => setShowCouponConfetti(false), 3500);
+  };
+
   const handleApplyCoupon = async (codeToApply?: string) => {
     const targetCode = codeToApply || couponCode;
     try {
@@ -81,10 +88,12 @@ export const PlansAddonsCouponsStep: React.FC<Props> = ({ prefill, onComplete, o
         setCouponDiscount(discount);
         setCouponApplied(true);
         setCouponCode(targetCode);
+        triggerCouponCelebration();
         toast.success('Coupon Applied!', `₹${discount} discount applied to your order.`);
       } else {
         if (targetCode.toUpperCase().includes('WELCOME') || targetCode.toUpperCase().includes('FIBER') || targetCode.toUpperCase().includes('ANNUAL')) {
           setCouponDiscount(100); setCouponApplied(true); setCouponCode(targetCode);
+          triggerCouponCelebration();
           toast.success('Coupon Applied!', '₹100 discount applied to order.');
         } else {
           toast.error('Invalid Coupon', 'Coupon code not found.');
@@ -93,6 +102,7 @@ export const PlansAddonsCouponsStep: React.FC<Props> = ({ prefill, onComplete, o
     } catch {
       if (targetCode.toUpperCase().includes('WELCOME') || targetCode.toUpperCase().includes('FIBER') || targetCode.toUpperCase().includes('ANNUAL')) {
         setCouponDiscount(100); setCouponApplied(true); setCouponCode(targetCode);
+        triggerCouponCelebration();
         toast.success('Coupon Applied!', '₹100 discount applied to order.');
       } else {
         toast.error('Invalid Coupon', 'This coupon code is not valid.');
@@ -554,10 +564,32 @@ export const PlansAddonsCouponsStep: React.FC<Props> = ({ prefill, onComplete, o
                 </button>
               </div>
 
+              {showCouponConfetti && <ConfettiCanvas />}
+
               {couponApplied && (
-                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 flex justify-between items-center text-xs font-black text-emerald-700 dark:text-emerald-300">
-                  <span className="flex items-center gap-2"><CheckCircle2 size={16} /> Coupon ({couponCode}) Applied Successfully!</span>
-                  <span>- ₹{couponDiscount.toFixed(2)}</span>
+                <div className="p-4.5 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-900/90 to-purple-950/90 border-2 border-emerald-400 text-white flex justify-between items-center text-xs font-black shadow-[0_0_25px_rgba(16,185,129,0.5)] animate-pop-bounce">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black shadow-lg animate-victory-burst shrink-0">
+                      <Sparkles size={20} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-extrabold uppercase tracking-wider text-xs">
+                          🏷️ COUPON UNLOCKED!
+                        </span>
+                        <span className="clay-badge-emerald text-[9px] px-2 py-0.5 font-mono font-black">
+                          {couponCode}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 font-medium mt-0.5">
+                        Special promo discount token activated for your broadband order.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-emerald-300 uppercase block font-bold">Instant Savings</span>
+                    <span className="text-xl font-black text-emerald-400 font-mono">- ₹{couponDiscount.toFixed(0)}</span>
+                  </div>
                 </div>
               )}
 

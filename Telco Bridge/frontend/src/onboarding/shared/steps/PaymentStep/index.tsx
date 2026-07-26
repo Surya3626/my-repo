@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import api from '../../../../utils/api';
 import { useToast } from '../../../../components/common/Toast';
 import { CreditCard, Smartphone, Building, Wallet, FileText, ChevronRight, ChevronLeft, RefreshCw, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
+import { ConfettiCanvas } from '../../../../components/features/ConfettiCanvas';
 import type { Channel } from '../../state/onboardingMachine';
 
 interface Props {
@@ -162,23 +163,30 @@ export const PaymentStep: React.FC<Props> = ({ prefill, onComplete, onBack, isLo
           )}
 
           {paymentStatus === 'success' && (
-            <div className="clay-modal p-8 flex flex-col items-center justify-center space-y-6 text-center animate-fade-in">
-              <div className="w-20 h-20 clay-badge-emerald rounded-full flex items-center justify-center shadow-2xl scale-110">
-                <CheckCircle2 size={44} className="text-emerald-600 dark:text-emerald-400" />
+            <div className="clay-modal p-8 flex flex-col items-center justify-center space-y-6 text-center animate-fade-in relative">
+              <ConfettiCanvas />
+
+              <div className="w-20 h-20 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-3xl flex items-center justify-center shadow-2xl scale-110 border-4 border-emerald-300 dark:border-emerald-700 animate-victory-burst">
+                <CheckCircle2 size={48} />
               </div>
               
               <div className="space-y-1.5">
                 <span className="clay-badge-emerald px-3 py-1 text-xs font-black uppercase">
                   {isEnterprisePostpaid ? 'ORDER AUTHORIZED WITH PO GUARANTEE' : 'PAYMENT SUCCESSFUL'}
                 </span>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white">Connection Order Confirmed!</h3>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider">Connection Order Confirmed!</h3>
                 <p className="text-xs font-mono font-bold text-slate-500">
                   Transaction Ref: <strong className="text-tpf-purple">{transactionRef?.transactionId || 'TXN-' + Date.now()}</strong>
                 </p>
               </div>
 
-              {/* Generated Account Profile Card */}
-              <div className="w-full max-w-md clay-card p-5 space-y-3 text-left">
+              {/* Generated Account Profile Card with Metallic Stamp */}
+              <div className="w-full max-w-md clay-card p-5 space-y-3 text-left relative overflow-hidden shadow-2xl border-2 border-emerald-500/30">
+                {/* 🏆 3D METALLIC PAID & SEALED STAMP OVERLAY */}
+                <div className="absolute top-3 right-4 px-4 py-1.5 border-4 border-emerald-500 text-emerald-500 dark:text-emerald-400 font-black text-sm uppercase tracking-widest rounded-2xl rotate-[-6deg] opacity-90 animate-stamp-bounce pointer-events-none shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                  ✓ PAID &amp; SEALED
+                </div>
+
                 <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
                   <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Generated Telecom Identity:</span>
                   <span className="clay-badge-purple text-[9px] px-2 py-0.5 font-bold">READY FOR ACTIVATION</span>
@@ -207,7 +215,7 @@ export const PaymentStep: React.FC<Props> = ({ prefill, onComplete, onBack, isLo
               <button
                 type="button"
                 onClick={() => onComplete({ paymentMode, transactionId: transactionRef?.transactionId, amount: total, paymentStatus: 'success' })}
-                className="px-8 py-4 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-2xl transition"
+                className="px-8 py-4 clay-button-purple text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-2xl transition scale-105"
               >
                 Proceed to Consent Authorization <ChevronRight size={18} />
               </button>

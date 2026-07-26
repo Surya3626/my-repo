@@ -4,9 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/common/Toast';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { StepProgressBar } from '../shared/components/StepProgressBar';
+import { StepTransitionOverlay } from '../shared/components/StepTransitionOverlay';
 import {
   getUiSteps,
   getNextUiStep,
+  getUiStepIndex,
+  getTotalUiSteps,
   type OnboardingStep,
   type Channel,
 } from '../shared/state/onboardingMachine';
@@ -121,19 +124,31 @@ export const SelfOnboardingRouter: React.FC = () => {
 
 
 
+  const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
+  const [transitionNextStep, setTransitionNextStep] = useState<OnboardingStep>('CUSTOMER_DETAILS');
+
   // ─── Step navigation ────────────────────────────────────────────────────────
 
   const handleStepComplete = useCallback(async (payload: Record<string, unknown>) => {
     if (!journey) return;
     setLoading(true);
     setError('');
+
+    const next = getNextUiStep(CHANNEL, currentStep);
+    if (next !== 'COMPLETE') {
+      setTransitionNextStep(next);
+      setShowTransitionOverlay(true);
+    }
+
     try {
       const payloadJson = JSON.stringify(payload);
       const updated = await completeStep(journey.journeyId, currentStep, payloadJson, customer?.mobileNumber);
+      
+      // Brief animated delay for step transition overlay
+      await new Promise(r => setTimeout(r, 1100));
+
       applyJourney(updated);
 
-      // Advance to next UI-visible step
-      const next = getNextUiStep(CHANNEL, currentStep);
       if (next === 'COMPLETE') {
         toast.success('Onboarding Complete!', 'Your fiber connection has been booked.');
         navigate('/selfcare');
@@ -148,6 +163,7 @@ export const SelfOnboardingRouter: React.FC = () => {
       setError(err.response?.data?.message || 'Failed to save step. Please try again.');
     } finally {
       setLoading(false);
+      setShowTransitionOverlay(false);
     }
   }, [journey, currentStep, customer, navigate, toast]);
 
@@ -264,6 +280,15 @@ export const SelfOnboardingRouter: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8 animate-fade-in">
+      {/* 🔮 Unique Animated Holographic Step Transition Overlay */}
+      <StepTransitionOverlay
+        isVisible={showTransitionOverlay}
+        fromStep={currentStep}
+        toStep={transitionNextStep}
+        currentIndex={getUiStepIndex(CHANNEL, transitionNextStep)}
+        totalSteps={getTotalUiSteps(CHANNEL)}
+      />
+
       {/* Customer save & exit strip */}
       <div className="flex justify-between items-center px-1">
         <span className="text-xs font-bold text-slate-400">TelcoBridge Self-Onboarding Portal</span>
@@ -295,8 +320,15 @@ export const SelfOnboardingRouter: React.FC = () => {
         </div>
       )}
 
-      {/* Active step container with smooth slide-in transition */}
-      <div key={currentStep} className="clay-card p-8 relative min-h-[400px] flex flex-col justify-between animate-slide-right">
+      {/* Active step container with smooth slide-in transition & glowing Quantum Warp step transition conduit */}
+      <div key={currentStep} className="clay-card p-8 relative min-h-[400px] flex flex-col justify-between animate-slide-right overflow-hidden shadow-2xl">
+        {/* 🚀 Quantum Warp Step Transition Conduit Beam */}
+        {loading && (
+          <div className="absolute top-0 inset-x-0 h-2 bg-slate-950 overflow-hidden z-30 flex items-center">
+            <div className="h-full w-full bg-gradient-to-r from-purple-600 via-pink-500 to-emerald-400 animate-fiber-beam shadow-[0_0_15px_#a855f7]" />
+          </div>
+        )}
+
         {currentStep === 'FEASIBILITY_CHECK' && <FeasibilityCheckStep {...stepProps} />}
         {currentStep === 'CUSTOMER_DETAILS' && <CustomerDetailsStep {...stepProps} />}
         {currentStep === 'OTP_VERIFICATION' && <OtpVerificationStep {...stepProps} />}

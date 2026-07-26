@@ -50,12 +50,14 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({
         </div>
       </div>
 
-      {/* Progress Track */}
-      <div className="relative w-full h-2.5 bg-slate-200 dark:bg-slate-800/80 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-slate-700">
+      {/* Progress Track with Optical Light Particle Stream */}
+      <div className="relative w-full h-3 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-slate-800 shadow-inner">
         <div
-          className="h-full bg-gradient-to-r from-tpf-purple via-tpf-pink to-emerald-400 rounded-full transition-all duration-700 shadow-md"
+          className="h-full bg-gradient-to-r from-purple-600 via-pink-500 to-emerald-400 rounded-full transition-all duration-700 shadow-[0_0_12px_rgba(168,85,247,0.6)] animate-fiber-beam relative overflow-hidden"
           style={{ width: `${progressPct}%` }}
-        />
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-pulse" />
+        </div>
       </div>
 
       {/* Stepper Nodes */}
