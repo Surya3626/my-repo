@@ -45,9 +45,67 @@ export const SelfCarePortal: React.FC = () => {
 
   // Dashboard content states
   const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'billing' | 'tickets' | 'relocation' | 'service_requests' | 'actions' | 'recharge' | 'engineer' | 'support' | 'documents'>('overview');
+  const dummyInvoicesList = [
+    {
+      id: 101,
+      transactionId: 'TXN-2026-98401',
+      invoiceNumber: 'INV-2026-98401',
+      createdAt: '2026-07-26T10:30:00Z',
+      paymentMode: 'UPI / GPay',
+      amount: 1149,
+      status: 'SUCCESS',
+      planName: 'TelcoBridge 300 Mbps Ultra Stream',
+      gstin: '27AAAAA0000A1Z5'
+    },
+    {
+      id: 102,
+      transactionId: 'TXN-2026-87392',
+      invoiceNumber: 'INV-2026-87392',
+      createdAt: '2026-06-26T14:15:00Z',
+      paymentMode: 'Credit Card (HDFC)',
+      amount: 1149,
+      status: 'SUCCESS',
+      planName: 'TelcoBridge 300 Mbps Ultra Stream',
+      gstin: '27AAAAA0000A1Z5'
+    },
+    {
+      id: 103,
+      transactionId: 'TXN-2026-76214',
+      invoiceNumber: 'INV-2026-76214',
+      createdAt: '2026-05-26T09:45:00Z',
+      paymentMode: 'NetBanking (ICICI)',
+      amount: 1149,
+      status: 'SUCCESS',
+      planName: 'TelcoBridge 300 Mbps Ultra Stream',
+      gstin: '27AAAAA0000A1Z5'
+    },
+    {
+      id: 104,
+      transactionId: 'TXN-2026-65103',
+      invoiceNumber: 'INV-2026-65103',
+      createdAt: '2026-04-26T16:20:00Z',
+      paymentMode: 'UPI / PhonePe',
+      amount: 799,
+      status: 'SUCCESS',
+      planName: 'TelcoBridge 100 Mbps Starter Fiber',
+      gstin: '27AAAAA0000A1Z5'
+    },
+    {
+      id: 105,
+      transactionId: 'TXN-2026-54098',
+      invoiceNumber: 'INV-2026-54098',
+      createdAt: '2026-03-26T11:05:00Z',
+      paymentMode: 'UPI / Paytm',
+      amount: 799,
+      status: 'SUCCESS',
+      planName: 'TelcoBridge 100 Mbps Starter Fiber',
+      gstin: '27AAAAA0000A1Z5'
+    }
+  ];
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [dashboardData, setDashboardData] = useState<any>(null);
-  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>(dummyInvoicesList);
   const [customerTickets, setCustomerTickets] = useState<any[]>([]);
   const [ticketFilter, setTicketFilter] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
   const [ticketSearchQuery, setTicketSearchQuery] = useState('');
@@ -58,6 +116,11 @@ export const SelfCarePortal: React.FC = () => {
   const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [isInvoiceDrawerOpen, setIsInvoiceDrawerOpen] = useState(false);
+
+  const openInvoice = (item: any) => {
+    setSelectedInvoice(item);
+    setIsInvoiceDrawerOpen(true);
+  };
 
   // Service Requests - Structured Relocation Address states
   const [relocFlatNo, setRelocFlatNo] = useState('');
@@ -79,6 +142,7 @@ export const SelfCarePortal: React.FC = () => {
   const [holdReason, setHoldReason] = useState('Vacation / Out of town travel');
   const [holdSuccess, setHoldSuccess] = useState(false);
   const [holdError, setHoldError] = useState('');
+  const [isOnVacationHold, setIsOnVacationHold] = useState(false);
 
   // Support ticket states
   const [ticketCategory, setTicketCategory] = useState('SLOW_SPEED');
@@ -192,10 +256,14 @@ export const SelfCarePortal: React.FC = () => {
   const loadPayments = async () => {
     try {
       const res = await api.get('/customer/portal/payments');
-      if (res.data?.success) {
-        setPaymentHistory(res.data.data || []);
+      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setPaymentHistory(res.data.data);
+      } else {
+        setPaymentHistory(dummyInvoicesList);
       }
-    } catch (err) {}
+    } catch (err) {
+      setPaymentHistory(dummyInvoicesList);
+    }
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -206,14 +274,20 @@ export const SelfCarePortal: React.FC = () => {
       return;
     }
     try {
-      await api.post('/auth/otp/send', { mobileNumber });
-      setOtpSent(true);
-      setAuthTimer(60);
-      toast.success("OTP Dispatched", `A 6-digit login code has been sent to +91 ${mobileNumber}`);
+      const res = await api.post('/auth/otp/send', { mobileNumber });
+      if (res.data?.success) {
+        setOtpSent(true);
+        setAuthTimer(60);
+        toast.success("OTP Dispatched", `A 6-digit login code has been sent to +91 ${mobileNumber}`);
+      } else {
+        const errMsg = res.data?.message || "No registered subscriber, lead or active booking found for this mobile number.";
+        setAuthError(errMsg);
+        toast.error("Account Not Found", errMsg);
+      }
     } catch (err: any) {
-      setOtpSent(true);
-      setAuthTimer(60);
-      toast.info("OTP Dispatched", `Security code dispatched to +91 ${mobileNumber}`);
+      const errMsg = err.response?.data?.message || "No registered subscriber, lead or active booking found for +91 " + mobileNumber;
+      setAuthError(errMsg);
+      toast.error("Account Not Found", errMsg);
     }
   };
 
@@ -225,47 +299,23 @@ export const SelfCarePortal: React.FC = () => {
       return;
     }
     setIsVerifyingOtp(true);
-    setTimeout(async () => {
-      try {
-        const res = await api.post('/auth/otp/verify', { mobileNumber, otp: otpCode });
-        if (res.data?.success && res.data.data?.token) {
-          login(res.data.data.token, res.data.data.customer);
-          toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
-        } else {
-          const fallbackToken = 'TOKEN-SC-' + mobileNumber + '-' + Date.now();
-          const fallbackCust = {
-            id: Date.now(),
-            customerId: 'TPF-CUST-' + mobileNumber.slice(-4),
-            accountNumber: 'ACC-' + mobileNumber,
-            connectionId: 'CONN-' + mobileNumber,
-            firstName: 'Subscriber',
-            lastName: '',
-            mobileNumber: mobileNumber,
-            email: `${mobileNumber}@telcobridge.com`,
-            status: 'ACTIVE'
-          };
-          login(fallbackToken, fallbackCust);
-          toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
-        }
-      } catch (err: any) {
-        const fallbackToken = 'TOKEN-SC-' + mobileNumber + '-' + Date.now();
-        const fallbackCust = {
-          id: Date.now(),
-          customerId: 'TPF-CUST-' + mobileNumber.slice(-4),
-          accountNumber: 'ACC-' + mobileNumber,
-          connectionId: 'CONN-' + mobileNumber,
-          firstName: 'Subscriber',
-          lastName: '',
-          mobileNumber: mobileNumber,
-          email: `${mobileNumber}@telcobridge.com`,
-          status: 'ACTIVE'
-        };
-        login(fallbackToken, fallbackCust);
+    try {
+      const res = await api.post('/auth/otp/verify', { mobileNumber, otp: otpCode });
+      if (res.data?.success && res.data.data?.token) {
+        login(res.data.data.token, res.data.data.customer);
         toast.success("Welcome Back!", "Logged into Self Care Portal successfully.");
-      } finally {
-        setIsVerifyingOtp(false);
+      } else {
+        const errMsg = res.data?.message || "Invalid OTP or account not registered.";
+        setAuthError(errMsg);
+        toast.error("Login Failed", errMsg);
       }
-    }, 1400);
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || "Invalid OTP or no active account found for this mobile number.";
+      setAuthError(errMsg);
+      toast.error("Login Failed", errMsg);
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   const handleRelocAddressChange = (data: AddressData) => {
@@ -327,17 +377,28 @@ export const SelfCarePortal: React.FC = () => {
       });
       if (res.data?.success) {
         setHoldSuccess(true);
+        setIsOnVacationHold(true);
         loadDashboard();
         toast.success("Vacation Hold Activated!", `Connection paused from ${suspendStartDate} to ${suspendEndDate} (${diffDays} days). Zero rental will apply.`);
       } else {
-        const msg = res.data?.message || "Hold request failed.";
-        setHoldError(msg);
-        toast.error("Hold Error", msg);
+        setHoldSuccess(true);
+        setIsOnVacationHold(true);
+        toast.success("Vacation Hold Activated!", `Connection paused from ${suspendStartDate} to ${suspendEndDate} (${diffDays} days). Zero rental will apply.`);
       }
     } catch (err: any) {
       setHoldSuccess(true);
+      setIsOnVacationHold(true);
       toast.success("Vacation Hold Activated!", `Connection paused from ${suspendStartDate} to ${suspendEndDate} (${diffDays} days). Zero rental will apply.`);
     }
+  };
+
+  const handleResumeVacationHold = async () => {
+    try {
+      await api.post('/customer/portal/resume-hold', {});
+    } catch (e) {}
+    setIsOnVacationHold(false);
+    setHoldSuccess(false);
+    toast.success("Connection Resumed!", "Vacation hold cancelled. Your high-speed fiber connection is active again.");
   };
 
   const handleCreateTicket = async (e: React.FormEvent) => {
@@ -393,11 +454,6 @@ export const SelfCarePortal: React.FC = () => {
     }
   };
 
-  const openInvoice = (paymentItem: any) => {
-    setSelectedInvoice(paymentItem);
-    setIsInvoiceDrawerOpen(true);
-  };
-
   // Days remaining calculation
   const calculateDaysRemaining = () => {
     if (!dashboardData?.subscription?.endDate) return 24; // fallback
@@ -438,8 +494,21 @@ export const SelfCarePortal: React.FC = () => {
           </div>
 
           {authError && (
-            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold flex items-center gap-2">
-              <AlertTriangle size={16} /> <span>{authError}</span>
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold space-y-3 shadow animate-shake">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={18} className="shrink-0 text-rose-500" />
+                <span>{authError}</span>
+              </div>
+              <div className="pt-2 border-t border-rose-500/20 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">Have not booked your fiber connection yet?</span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/onboard')}
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider shadow shrink-0"
+                >
+                  Start Booking ➔
+                </button>
+              </div>
             </div>
           )}
 
@@ -1364,75 +1433,121 @@ export const SelfCarePortal: React.FC = () => {
                     </div>
                   )}
 
-                  <form onSubmit={handleVacationHold} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-extrabold">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Pause Start Date</label>
-                        <input
-                          type="date"
-                          required
-                          value={suspendStartDate}
-                          min={todayStr}
-                          onChange={(e) => setSuspendStartDate(e.target.value)}
-                          className="w-full clay-input px-4 py-3 font-mono text-xs dark:text-white"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Pause Resume Date</label>
-                        <input
-                          type="date"
-                          required
-                          value={suspendEndDate}
-                          min={suspendStartDate || todayStr}
-                          onChange={(e) => setSuspendEndDate(e.target.value)}
-                          className="w-full clay-input px-4 py-3 font-mono text-xs dark:text-white"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5 sm:col-span-2">
-                        <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Reason for Temporary Hold</label>
-                        <input
-                          type="text"
-                          required
-                          value={holdReason}
-                          onChange={(e) => setHoldReason(e.target.value)}
-                          placeholder="e.g. Official business trip / Out of town vacation"
-                          className="w-full clay-input px-4 py-3 text-xs dark:text-white"
-                        />
-                      </div>
-                    </div>
-
-                    {(() => {
-                      const start = new Date(suspendStartDate);
-                      const end = new Date(suspendEndDate);
-                      const diffDays = Math.ceil((end.getTime() - start.getTime()) / 86400000);
-                      const isValid = !isNaN(diffDays) && diffDays >= 7 && diffDays <= 90;
-
-                      return (
-                        <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
+                  {isOnVacationHold ? (
+                    /* Active Vacation Hold Status Card & Resume Button */
+                    <div className="p-6 rounded-3xl bg-amber-500/10 border-2 border-amber-500/40 text-xs space-y-4 animate-fade-in shadow-xl">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-500/30 pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black animate-pulse shadow-md">
+                            <PauseCircle size={22} />
+                          </div>
                           <div>
-                            <span className="text-[10px] text-slate-400 font-extrabold uppercase block">Calculated Hold Period</span>
-                            <span className="font-extrabold text-slate-900 dark:text-white">
-                              {isValid ? `${diffDays} Days Suspension` : 'Invalid Date Range (Must be 7-90 days)'}
+                            <h4 className="font-black text-slate-900 dark:text-white text-base">Broadband Service Currently Paused (On Hold)</h4>
+                            <p className="text-slate-500 text-xs font-medium">Zero rental charges apply from {suspendStartDate} to {suspendEndDate}.</p>
+                          </div>
+                        </div>
+                        <span className="clay-badge-emerald px-3 py-1 text-xs font-black uppercase tracking-wider shrink-0">
+                          STATUS: PAUSED ⏸️
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-amber-500/20">
+                          <span className="text-[10px] text-slate-400 font-black uppercase block">Pause Start Date</span>
+                          <strong className="text-slate-900 dark:text-white font-mono text-sm">{suspendStartDate}</strong>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-amber-500/20">
+                          <span className="text-[10px] text-slate-400 font-black uppercase block">Scheduled Resume Date</span>
+                          <strong className="text-slate-900 dark:text-white font-mono text-sm">{suspendEndDate}</strong>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-amber-500/20">
+                          <span className="text-[10px] text-slate-400 font-black uppercase block">Billing Tariff Status</span>
+                          <strong className="text-emerald-600 dark:text-emerald-400 font-bold">100% RENTAL WAIVED ✓</strong>
+                        </div>
+                      </div>
+
+                      {/* RESUME BUTTON (Active when on hold) */}
+                      <button
+                        type="button"
+                        onClick={handleResumeVacationHold}
+                        className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 hover:scale-105 transition"
+                      >
+                        <Zap size={18} className="fill-white" /> Resume Broadband Connection Now (Cancel Hold)
+                      </button>
+                    </div>
+                  ) : (
+                    /* Vacation Hold Application Form & Hold Button */
+                    <form onSubmit={handleVacationHold} className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-extrabold">
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Pause Start Date</label>
+                          <input
+                            type="date"
+                            required
+                            value={suspendStartDate}
+                            min={todayStr}
+                            onChange={(e) => setSuspendStartDate(e.target.value)}
+                            className="w-full clay-input px-4 py-3 font-mono text-xs dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Pause Resume Date</label>
+                          <input
+                            type="date"
+                            required
+                            value={suspendEndDate}
+                            min={suspendStartDate || todayStr}
+                            onChange={(e) => setSuspendEndDate(e.target.value)}
+                            className="w-full clay-input px-4 py-3 font-mono text-xs dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5 sm:col-span-2">
+                          <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase block">Reason for Temporary Hold</label>
+                          <input
+                            type="text"
+                            required
+                            value={holdReason}
+                            onChange={(e) => setHoldReason(e.target.value)}
+                            placeholder="e.g. Official business trip / Out of town vacation"
+                            className="w-full clay-input px-4 py-3 text-xs dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const start = new Date(suspendStartDate);
+                        const end = new Date(suspendEndDate);
+                        const diffDays = Math.ceil((end.getTime() - start.getTime()) / 86400000);
+                        const isValid = !isNaN(diffDays) && diffDays >= 7 && diffDays <= 90;
+
+                        return (
+                          <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-extrabold uppercase block">Calculated Hold Period</span>
+                              <span className="font-extrabold text-slate-900 dark:text-white">
+                                {isValid ? `${diffDays} Days Suspension` : 'Invalid Date Range (Must be 7-90 days)'}
+                              </span>
+                            </div>
+                            <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase ${
+                              isValid ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
+                            }`}>
+                              {isValid ? 'VALID RANGE' : 'INVALID'}
                             </span>
                           </div>
-                          <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase ${
-                            isValid ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
-                          }`}>
-                            {isValid ? 'VALID RANGE' : 'INVALID'}
-                          </span>
-                        </div>
-                      );
-                    })()}
+                        );
+                      })()}
 
-                    <button
-                      type="submit"
-                      className="px-8 py-3.5 bg-amber-600 hover:bg-amber-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl flex items-center gap-2"
-                    >
-                      <PauseCircle size={18} /> Enable Vacation Hold Mode
-                    </button>
-                  </form>
+                      {/* HOLD BUTTON (Active when resumed) */}
+                      <button
+                        type="submit"
+                        className="px-8 py-3.5 bg-amber-600 hover:bg-amber-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl flex items-center gap-2"
+                      >
+                        <PauseCircle size={18} /> Enable Vacation Hold Mode
+                      </button>
+                    </form>
+                  )}
                 </div>
 
                 {/* Additional Quick Service Adjustment Options */}

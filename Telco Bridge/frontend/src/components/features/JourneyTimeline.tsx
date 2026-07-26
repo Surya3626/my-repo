@@ -23,6 +23,7 @@ const STEP_CONFIG = [
 ];
 
 export const JourneyTimeline: React.FC<JourneyTimelineProps> = ({
+  mobileNumber = '',
   stepHistory = [],
   currentStep = 1,
   status = 'IN_PROGRESS',
@@ -147,29 +148,37 @@ export const JourneyTimeline: React.FC<JourneyTimelineProps> = ({
                   )}
                 </div>
 
-                {item.history && (
-                  <div className="mt-0.5 space-y-0.5 text-left">
-                    <p className="text-[10px] text-slate-400">
-                      <span className="font-bold text-slate-500 dark:text-slate-400">
-                        {item.history.performedById || item.history.actorName || 'Actor'}
+                {/* Actor & Historical Step Execution Timestamp */}
+                {(item.isDone || item.isCurrent) && (
+                  <div className="mt-1 space-y-0.5 text-left">
+                    <p className="text-[10px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-slate-700 dark:text-slate-300">
+                        {item.history?.performedById || item.history?.actorName || item.history?.prospectMobile || mobileNumber || 'CUSTOMER'}
                       </span>
-                      {' · '}
-                      <span className={`px-1 py-0.5 rounded text-[9px] font-bold ${
-                        item.history.performedByType === 'SALES_AGENT' || item.history.role === 'SOC_ADMIN'
-                          ? 'bg-purple-500/10 text-purple-400'
-                          : 'bg-blue-500/10 text-blue-400'
+                      <span>·</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
+                        item.history?.performedByType === 'SALES_AGENT' || item.history?.role === 'SOC_ADMIN'
+                          ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300'
+                          : 'bg-blue-500/20 text-blue-600 dark:text-blue-300'
                       }`}>
-                        {item.history.performedByType || item.history.role || 'USER'}
+                        {item.history?.performedByType || item.history?.role || 'CUSTOMER'}
                       </span>
                     </p>
-                    {item.history.createdAt && (
-                      <p className="text-[9px] text-slate-400 flex items-center gap-1">
-                        <Clock size={9} />
-                        {new Date(item.history.createdAt).toLocaleString('en-IN', {
-                          day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                        })}
-                      </p>
-                    )}
+
+                    {/* Render exact step completion timestamp if recorded in audit log */}
+                    {(() => {
+                      const ts = item.history?.performedAt || item.history?.createdAt || item.history?.timestamp || item.history?.updatedAt || item.history?.date;
+                      return ts ? (
+                        <p className="text-[9.5px] font-mono text-purple-600 dark:text-purple-300 font-bold flex items-center gap-1 mt-0.5">
+                          <Clock size={11} className="text-purple-500 shrink-0" />
+                          <span>
+                            {new Date(ts).toLocaleString('en-IN', {
+                              day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+                            })} IST
+                          </span>
+                        </p>
+                      ) : null;
+                    })()}
                   </div>
                 )}
               </div>

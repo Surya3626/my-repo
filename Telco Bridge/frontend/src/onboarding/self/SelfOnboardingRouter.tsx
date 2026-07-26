@@ -134,6 +134,17 @@ export const SelfOnboardingRouter: React.FC = () => {
     setLoading(true);
     setError('');
 
+    // Persist mobile number to localStorage on every step completion for refresh resilience
+    const targetMobile = (payload?.mobileNumber as string) 
+      || (payload?.prospectMobile as string) 
+      || customer?.mobileNumber 
+      || localStorage.getItem('tpf_resume_mobile') 
+      || '';
+
+    if (targetMobile && !targetMobile.startsWith('PROSPECT-')) {
+      localStorage.setItem('tpf_resume_mobile', targetMobile);
+    }
+
     const next = getNextUiStep(CHANNEL, currentStep);
     if (next !== 'COMPLETE') {
       setTransitionNextStep(next);
@@ -142,7 +153,7 @@ export const SelfOnboardingRouter: React.FC = () => {
 
     try {
       const payloadJson = JSON.stringify(payload);
-      const updated = await completeStep(journey.journeyId, currentStep, payloadJson, customer?.mobileNumber);
+      const updated = await completeStep(journey.journeyId, currentStep, payloadJson, targetMobile || customer?.mobileNumber);
       
       // Brief animated delay for step transition overlay
       await new Promise(r => setTimeout(r, 1100));

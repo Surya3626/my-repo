@@ -31,7 +31,7 @@ interface BroadbandPlan {
 
 export const LandingPage: React.FC = () => {
   const { t } = useLanguage();
-  const { login } = useAuth();
+  const { login, customer } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [pincode, setPincode] = useState('');
@@ -56,6 +56,29 @@ export const LandingPage: React.FC = () => {
   const [resumeTimer, setResumeTimer] = useState(60);
   const [resumeLoading, setResumeLoading] = useState(false);
   const [isVerifyingResumeOtp, setIsVerifyingResumeOtp] = useState(false);
+
+  const handleOpenResumeBooking = async () => {
+    const savedMobile = localStorage.getItem('tpf_resume_mobile') || customer?.mobileNumber || '';
+    if (savedMobile && savedMobile.length === 10) {
+      try {
+        const check = await checkJourneyExists(savedMobile);
+        if (check.exists) {
+          if ((check as any).status === 'COMPLETED') {
+            toast.info('Connection Active', 'Redirecting to your SelfCare Portal...');
+            navigate('/selfcare');
+          } else {
+            toast.success('Active Session Detected', `Resuming your booking for +91-${savedMobile}...`);
+            navigate('/onboard', { state: { resumeMobile: savedMobile } });
+          }
+          return;
+        }
+      } catch (e) {}
+    }
+    setResumeMobile(savedMobile);
+    setShowResumeModal(true);
+    setResumeOtpStep('MOBILE');
+    setResumeOtpCode('');
+  };
 
   // OTP Countdown timer effect
   useEffect(() => {
@@ -331,11 +354,7 @@ export const LandingPage: React.FC = () => {
               </a>
               <button
                 type="button"
-                onClick={() => {
-                  setShowResumeModal(true);
-                  setResumeOtpStep('MOBILE');
-                  setResumeOtpCode('');
-                }}
+                onClick={handleOpenResumeBooking}
                 className="px-6 py-4 font-black text-xs uppercase tracking-wider text-slate-700 dark:text-slate-200 clay-button-slate rounded-2xl flex items-center gap-2 shadow-md hover:scale-105 transition"
               >
                 <UserCheck size={18} /> Resume Booking

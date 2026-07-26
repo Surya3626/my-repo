@@ -16,9 +16,12 @@ import { OtpVortexAnimator } from '../../components/features/OtpVortexAnimator';
  * - Checks whether an active OnboardingJourney exists BEFORE sending OTP.
  * - Displays a clear "No active booking found" state with a direct button to start a fresh application.
  */
+import { useAuth } from '../../context/AuthContext';
+
 export const ResumeLookup: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { customer } = useAuth();
 
   const params = new URLSearchParams(window.location.search);
   const prefillMobile = params.get('mobile') || '';
@@ -30,6 +33,25 @@ export const ResumeLookup: React.FC = () => {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [error, setError] = useState('');
   const [noJourneyFound, setNoJourneyFound] = useState(false);
+
+  // Auto-detect active booking session in the same browser to bypass asking RMN/OTP again
+  React.useEffect(() => {
+    const savedMobile = localStorage.getItem('tpf_resume_mobile') || customer?.mobileNumber || prefillMobile;
+    if (savedMobile && savedMobile.length === 10) {
+      setMobile(savedMobile);
+      checkJourneyExists(savedMobile).then(check => {
+        if (check.exists) {
+          if ((check as any).status === 'COMPLETED') {
+            toast.info('Connection Active', 'Redirecting to your SelfCare Portal...');
+            navigate('/selfcare');
+          } else {
+            toast.success('Active Session Detected', `Resuming your booking for +91-${savedMobile}...`);
+            navigate('/onboard', { state: { resumeMobile: savedMobile } });
+          }
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();

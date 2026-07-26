@@ -456,39 +456,33 @@ export const CustomerConsentStep: React.FC<Props> = ({
                 </button>
               </div>
 
-              {/* Form Inputs */}
-              <form onSubmit={handleVerifyConsentOtp} className="space-y-4">
+              {/* Form Inputs with Dual OTP Vortex Animations */}
+              <form onSubmit={handleVerifyConsentOtp} className="space-y-6">
                 {isAdminMode && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                      1. Agent Security Authorization Code
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={6}
-                      value={adminConsentOtp}
-                      onChange={e => setAdminConsentOtp(e.target.value.replace(/\D/g, ''))}
-                      placeholder="Enter 6-digit Agent OTP (e.g. 123456)"
-                      className="w-full border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-2xl px-4 py-3.5 text-center font-mono font-black text-xl tracking-[0.4em] text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 shadow-inner"
-                    />
-                  </div>
+                  <OtpVortexAnimator
+                    otpCode={adminConsentOtp}
+                    onChange={(code) => setAdminConsentOtp(code)}
+                    isValidating={loading}
+                    isSuccess={adminConsentOtp.length === 6}
+                    label="1. Sales Agent / Field Executive Authorization Pin"
+                    sublabel="Enter 6-digit Field Agent Security OTP code"
+                  />
                 )}
 
-                {/* 3D Swirling OTP Vortex & Victory Celebration Component */}
+                {/* 3D Swirling Customer OTP Vortex & Victory Celebration Component */}
                 <OtpVortexAnimator
                   otpCode={consentOtpCode}
                   onChange={(code) => {
                     setConsentOtpCode(code);
                     if (code.length === 6 && !consentVerified) {
                       setConsentVerified(true);
-                      toast.success("OTP Verified", "Consent verification code matched!");
+                      toast.success("Customer OTP Verified", "Subscriber consent authorization code matched!");
                     }
                   }}
                   isValidating={loading}
                   isSuccess={consentVerified}
-                  label={isAdminMode ? "2. Customer Verification OTP (Sent to Customer Mobile)" : "Subscriber Consent Authorization Code (6-Digit OTP)"}
-                  sublabel={`OTP dispatched to: +91-${mobileNumber} • Valid for 10:00 mins`}
+                  label={isAdminMode ? "2. Subscriber Consent Verification OTP (Sent to Customer Mobile)" : "Subscriber Consent Authorization Code (6-Digit OTP)"}
+                  sublabel={`OTP dispatched to subscriber: +91-${mobileNumber} • Valid for 10:00 mins`}
                 />
 
                 <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">

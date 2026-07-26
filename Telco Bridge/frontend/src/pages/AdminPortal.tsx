@@ -1485,8 +1485,11 @@ export const AdminPortal: React.FC = () => {
                           <p className="text-slate-700 dark:text-slate-300 font-medium">{log.description}</p>
                           <p className="text-[10px] text-pink-500 font-mono">Correlation ID: {log.correlationId}</p>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono shrink-0">
-                          {new Date(log.timestamp).toLocaleString()}
+                        <span className="text-[10px] text-purple-600 dark:text-purple-300 font-mono font-bold shrink-0 flex items-center gap-1">
+                          <Clock size={12} className="text-purple-500 shrink-0" />
+                          {new Date(log.timestamp).toLocaleString('en-IN', {
+                            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+                          })} IST
                         </span>
                       </div>
                     ))}
